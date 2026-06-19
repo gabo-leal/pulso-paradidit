@@ -115,17 +115,18 @@ export function assemble(raw, nowEpochSec) {
   const tResMark = t.resultado >= 0 ? `+${peso(t.resultado)}` : peso(t.resultado);
   const REPORTE_TFOOT = `<tr><td>Total 2026</td><td class="dim">${peso(t.ghl)}</td><td class="dim">${peso(t.lw)}</td><td>${peso(t.ingresos)}</td><td class="egr">${peso(t.ads)}</td><td class="pos">${tResMark}</td></tr>`;
 
-  // ── Gráfico SVG ────────────────────────────────────────────────────────────
-  // incomeByDay: SOLO GHL funnel (LW recurring excluido — no atribuible a gasto en ads)
+  // ── Gráfico SVG (SOLO el mes corriente) ────────────────────────────────────
+  const curMonth = cdmxDayKey(nowEpochSec).slice(0, 7);
+  // incomeByDay: SOLO GHL funnel del mes corriente (LW recurring excluido — no atribuible a gasto en ads)
   const incomeByDay = {};
   for (const tx of (raw.ghlTx || [])) {
-    if (tx.status === 'succeeded') {
-      const k = cdmxDayKey(epochOf(tx.createdAt));
-      incomeByDay[k] = (incomeByDay[k] || 0) + tx.amount;
-    }
+    if (tx.status !== 'succeeded') continue;
+    const k = cdmxDayKey(epochOf(tx.createdAt));
+    if (k.slice(0, 7) !== curMonth) continue;
+    incomeByDay[k] = (incomeByDay[k] || 0) + tx.amount;
   }
   const spendByDay = {};
-  for (const d of metaDaily) spendByDay[d.date] = d.spend;
+  for (const d of metaDaily) if (d.date.slice(0, 7) === curMonth) spendByDay[d.date] = d.spend;
   const todayKey = cdmxDayKey(nowEpochSec);
   const chartDays = [...new Set([...Object.keys(incomeByDay), ...Object.keys(spendByDay)])].sort();
 
@@ -229,6 +230,8 @@ export async function main() {
   const last7Day  = cdmxDayKey(now - 6 * 86400);
   const prev7Day  = cdmxDayKey(now - 13 * 86400);
   const prev0Day  = cdmxDayKey(now - 7 * 86400);
+  const monthStart = today.slice(0, 7) + '-01';
+  const metaSince  = monthStart < prev7Day ? monthStart : prev7Day; // cubre el mes corriente y las 2 ventanas 7d
 
   const mmddyyyy = epochSec => {
     const [y, m, d] = cdmxDayKey(epochSec).split('-');
@@ -251,8 +254,8 @@ export async function main() {
     listTransactions(GHL_TOKEN, LOC, '2026-01-01', '2026-12-31'),
     leadsCount(GHL_TOKEN, LOC, PIPE, mmddyyyy(now - 6 * 86400), mmddyyyy(now)),
     leadsCount(GHL_TOKEN, LOC, PIPE, mmddyyyy(now - 13 * 86400), mmddyyyy(now - 7 * 86400)),
-    // Solo las 2 ventanas (≈14 días) para no exceder la paginación diaria de Meta (~25 filas).
-    dailySpend(META_TOKEN, ACC, prev7Day, todayDash),
+    // Desde el inicio del mes corriente (dailySpend pagina, no se trunca); cubre gráfico + ventanas 7d.
+    dailySpend(META_TOKEN, ACC, metaSince, todayDash),
     monthlySpend(META_TOKEN, ACC, '2026-01-01', todayDash),
   ]);
 
