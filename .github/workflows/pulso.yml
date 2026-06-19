@@ -29,6 +29,11 @@ jobs:
         run: |
           node --test
           npm run build
+      - name: Cifrar el dashboard con contraseña (staticrypt)
+        env:
+          STATICRYPT_PASSWORD: ${{ secrets.PULSO_PASSWORD }}
+        run: |
+          npx --yes staticrypt dist/index.html --short -d dist
       - uses: actions/upload-pages-artifact@v3
         with:
           path: dist
