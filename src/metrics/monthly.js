@@ -1,6 +1,8 @@
 export function monthlyReport({ ghlTx, lwCharges, adsByMonth }) {
   const inc = {};
   const bump = (m, k, v) => { (inc[m] ??= { ghl: 0, lw: 0 })[k] += v; };
+  // Groups by UTC month (per plan interface). A CDMX-evening transaction (e.g. 23:00 CDMX = next UTC day)
+  // can land in the adjacent UTC month — intentional; do NOT "fix" to CDMX without updating all callers.
   for (const t of ghlTx) if (t.status === 'succeeded') bump(t.createdAt.slice(0, 7), 'ghl', t.amount);
   for (const c of lwCharges) if (c.paid && c.status === 'succeeded') {
     const m = new Date(c.created * 1000).toISOString().slice(0, 7);

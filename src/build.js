@@ -14,6 +14,9 @@ import { dailySpend, monthlySpend } from './sources/meta.js';
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const peso = n => '$' + Math.round(n).toLocaleString('en-US');
 const pct  = (a, b) => b ? Math.round(((a - b) / b) * 100) : 0;
+// deltaTxt: returns 'nuevo' when prev=0 & cur>0 (avoids misleading "+0%")
+export const deltaTxt = (cur, prev) =>
+  prev === 0 ? (cur > 0 ? 'nuevo' : '0%') : `${cur - prev >= 0 ? '+' : ''}${pct(cur, prev)}%`;
 const epochOf = iso => Date.parse(iso) / 1000;
 
 function pill(cls, inner) {
@@ -131,14 +134,13 @@ export function assemble(raw, nowEpochSec) {
   const churnTotal = raw.churnTotal ?? 0;
 
   // ── Pills ─────────────────────────────────────────────────────────────────
-  const ingPct = pct(ing7d, ingPrev);
   const ING_PILL = ing7d >= ingPrev
-    ? pill('up', `▲ +${ingPct}% vs semana previa`)
-    : pill('down', `▼ ${ingPct}% vs semana previa`);
+    ? pill('up', `▲ ${deltaTxt(ing7d, ingPrev)} vs semana previa`)
+    : pill('down', `▼ ${deltaTxt(ing7d, ingPrev)} vs semana previa`);
 
   const gastoPct = pct(gasto7d, gastoPrev);
   const GASTO_PILL = gasto7d > gastoPrev
-    ? pill('down', `▲ +${gastoPct}% gasto vs sem. previa`)
+    ? pill('down', `▲ ${deltaTxt(gasto7d, gastoPrev)} gasto vs sem. previa`)
     : pill('up', `▼ ${Math.abs(gastoPct)}% gasto vs sem. previa`);
 
   const roasPrevFmt = roasPrev.toFixed(2) + 'x';
@@ -152,11 +154,11 @@ export function assemble(raw, nowEpochSec) {
     : pill('up', `▼ bajó desde ${CPAPREV_fmt}`);
 
   // Hero prev strings with deltas
-  const ingDelta = ingPrev ? (ingPct >= 0 ? '+' : '') + ingPct + '%' : '—';
+  const ingDelta = ingPrev !== undefined ? deltaTxt(ing7d, ingPrev) : '—';
   const H_ING_PREV = `${peso(ingPrev)} · ${ingDelta}`;
 
   const leadsPct = pct(raw.leads7d, raw.leadsPrev);
-  const leadsDelta = raw.leadsPrev ? (leadsPct >= 0 ? '+' : '') + leadsPct + '%' : '—';
+  const leadsDelta = raw.leadsPrev !== undefined ? deltaTxt(raw.leads7d, raw.leadsPrev) : '—';
   const H_LEADS_PREV = `${raw.leadsPrev ?? 0} · ${leadsDelta}`;
 
   // ── Assemble output ────────────────────────────────────────────────────────

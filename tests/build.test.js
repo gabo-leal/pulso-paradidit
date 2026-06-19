@@ -2,7 +2,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { assemble } from '../src/build.js';
+import { assemble, deltaTxt } from '../src/build.js';
 import { render } from '../src/render.js';
 
 // Fixed "now": 2026-06-19 18:00:00 UTC-6 (midnight CDMX = 06:00 UTC next day)
@@ -108,4 +108,39 @@ test('render(template, assemble(fixture)) no lanza — todo {{marcador}} cubiert
   const tpl = readFileSync(new URL('../templates/pulso.template.html', import.meta.url), 'utf8');
   const data = assemble(fixture, now);
   assert.doesNotThrow(() => render(tpl, data), 'render lanzó: algún marcador del template no está cubierto por assemble');
+});
+
+// ── deltaTxt unit tests ──────────────────────────────────────────────────────
+test('deltaTxt: prev=0 cur>0 devuelve "nuevo"', () => {
+  assert.equal(deltaTxt(500, 0), 'nuevo');
+});
+
+test('deltaTxt: prev=0 cur=0 devuelve "0%"', () => {
+  assert.equal(deltaTxt(0, 0), '0%');
+});
+
+test('deltaTxt: prev>0 cur>prev devuelve porcentaje positivo', () => {
+  assert.equal(deltaTxt(200, 100), '+100%');
+});
+
+test('deltaTxt: prev>0 cur<prev devuelve porcentaje negativo', () => {
+  assert.equal(deltaTxt(50, 100), '-50%');
+});
+
+// ── ING_PILL con semana previa = 0 ──────────────────────────────────────────
+test('ING_PILL dice "nuevo" cuando prev=0 y cur>0', () => {
+  // now = 2026-06-19 18:00 UTC. last7 window starts 2026-06-12 18:00 UTC.
+  // We put a tx in last7 only (prev7 window is 2026-06-05..2026-06-12 — leave it empty).
+  const rawPrevZero = {
+    ...fixture,
+    ghlTx: [
+      { status: 'succeeded', createdAt: '2026-06-14T12:00:00-06:00', amount: 1500 },
+    ],
+    ghlTxYear: [
+      { status: 'succeeded', createdAt: '2026-06-14T12:00:00-06:00', amount: 1500 },
+    ],
+  };
+  const data = assemble(rawPrevZero, now);
+  assert.ok(data.ING_PILL.includes('nuevo'), `ING_PILL debería contener "nuevo", got: ${data.ING_PILL}`);
+  assert.ok(!data.ING_PILL.includes('+0%'), `ING_PILL NO debería contener "+0%", got: ${data.ING_PILL}`);
 });
