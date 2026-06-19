@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.superpowers/
+*.key
+*.env
+.env
+!.env.example
+*.rtf
