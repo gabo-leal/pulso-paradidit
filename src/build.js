@@ -208,6 +208,7 @@ export function assemble(raw, nowEpochSec) {
     CPA_PILL,
 
     // Gráfico + reporte
+    GRAFICO_MES:  ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'][parseInt(curMonth.slice(5, 7), 10) - 1],
     GRAFICO_SVG:  buildSvg(incomeByDay, spendByDay, chartDays, todayKey),
     REPORTE_TBODY,
     REPORTE_TFOOT,
