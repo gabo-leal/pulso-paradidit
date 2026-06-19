@@ -27,3 +27,7 @@ export function listActiveSubs(key, fetchImpl = globalThis.fetch) {
 export function listChargesSince(key, sinceEpoch, fetchImpl = globalThis.fetch) {
   return paginate(`${BASE}/charges?created[gte]=${sinceEpoch}`, key, fetchImpl);
 }
+
+export function listCanceledSubs(key, fetchImpl = globalThis.fetch) {
+  return paginate(`${BASE}/subscriptions?status=canceled`, key, fetchImpl);
+}
