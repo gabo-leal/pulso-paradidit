@@ -1,0 +1,10 @@
+{
+  "name": "pulso-paradidit",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "test": "node --test",
+    "build": "node src/build.js"
+  },
+  "engines": { "node": ">=20" }
+}
