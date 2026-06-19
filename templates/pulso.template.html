@@ -115,7 +115,7 @@
   <!-- RESUMEN AÑO -->
   <div class="year-head">2026 · Año hasta hoy <span>(MXN · LearnWorlds todo el año · GHL desde marzo)</span></div>
   <div class="year-grid">
-    <div class="ycard ing"><div class="yl">Ingresos totales</div><div class="yn">{{ANIO_INGRESOS}}</div><div class="ys">GHL $45,153 + LearnWorlds $112,250</div></div>
+    <div class="ycard ing"><div class="yl">Ingresos totales</div><div class="yn">{{ANIO_INGRESOS}}</div><div class="ys">{{ANIO_DESGLOSE}}</div></div>
     <div class="ycard gas"><div class="yl">Gasto en ads</div><div class="yn">{{ANIO_GASTO}}</div><div class="ys">Meta Ads · solo publicidad (no otros costos)</div></div>
     <div class="ycard res"><div class="yl">Resultado · ingresos − ads</div><div class="yn">{{ANIO_RESULTADO}}</div><div class="ys">ROAS anual {{ANIO_ROAS}}</div></div>
   </div>
@@ -134,8 +134,8 @@
     <div class="card">
       <div class="k">Ingresos · 7 días</div>
       <div class="v">{{ING_7D}} <span style="font-size:15px;color:var(--muted)">MXN</span></div>
-      <div class="sub">Sem. previa {{ING_PREV}} · MTD junio <b style="color:#fff">{{ING_PCT}}</b></div>
-      <span class="pill up">▲ +117% vs semana previa</span>
+      <div class="sub">Sem. previa {{ING_PREV}} · MTD junio <b style="color:#fff">{{MTD}}</b></div>
+      {{ING_PILL}}
     </div>
     <div class="card">
       <div class="k">MRR (recurrente)</div>
@@ -146,7 +146,7 @@
     <div class="card">
       <div class="k">Churn (junio)</div>
       <div class="v">{{CHURN}} <span style="font-size:15px;color:var(--muted)">canceladas</span></div>
-      <div class="sub">En LearnWorlds <span style="color:var(--muted-2)">· 208 históricas totales</span></div>
+      <div class="sub">En LearnWorlds <span style="color:var(--muted-2)">· {{CHURN_HIST}} históricas totales</span></div>
       <span class="pill up">✓ real · Stripe LW</span>
     </div>
   </div>
@@ -158,19 +158,19 @@
       <div class="k">Gasto ads · 7 días</div>
       <div class="v">{{GASTO_7D}} <span style="font-size:15px;color:var(--muted)">MXN</span></div>
       <div class="sub">Sem. previa {{GASTO_PREV}}</div>
-      <span class="pill down">▲ +245% gasto vs sem. previa</span>
+      {{GASTO_PILL}}
     </div>
     <div class="card">
       <div class="k">ROAS · 7 días</div>
       <div class="v">{{ROAS_7D}} <span style="font-size:14px;color:var(--muted)">directo</span></div>
       <div class="sub">Ingresos funnel ÷ ads · sem. previa {{ROAS_PREV}}</div>
-      <span class="pill down">▼ eficiencia bajó al escalar</span>
+      {{ROAS_PILL}}
     </div>
     <div class="card">
       <div class="k">CPA · 7 días</div>
       <div class="v">{{CPA_7D}} <span style="font-size:15px;color:var(--muted)">MXN</span></div>
       <div class="sub">sem. previa {{CPA_PREV}}</div>
-      <span class="pill down">▲ subió desde $145</span>
+      {{CPA_PILL}}
     </div>
   </div>
 
