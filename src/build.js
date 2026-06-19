@@ -243,7 +243,6 @@ export async function main() {
     leads7d,
     leadsPrev,
     metaDaily,
-    metaYear,
     adsByMonth,
   ] = await Promise.all([
     listActiveSubs(STRIPE_LW_KEY),
@@ -252,12 +251,13 @@ export async function main() {
     listTransactions(GHL_TOKEN, LOC, '2026-01-01', '2026-12-31'),
     leadsCount(GHL_TOKEN, LOC, PIPE, mmddyyyy(now - 6 * 86400), mmddyyyy(now)),
     leadsCount(GHL_TOKEN, LOC, PIPE, mmddyyyy(now - 13 * 86400), mmddyyyy(now - 7 * 86400)),
-    dailySpend(META_TOKEN, ACC, '2026-01-01', todayDash),
-    dailySpend(META_TOKEN, ACC, '2026-01-01', todayDash),
+    // Solo las 2 ventanas (≈14 días) para no exceder la paginación diaria de Meta (~25 filas).
+    dailySpend(META_TOKEN, ACC, prev7Day, todayDash),
     monthlySpend(META_TOKEN, ACC, '2026-01-01', todayDash),
   ]);
 
-  const metaSpendYear = metaYear.reduce((s, d) => s + d.spend, 0);
+  // Gasto anual: suma de los meses (monthlySpend trae 1 fila por mes, no se trunca por paginación).
+  const metaSpendYear = adsByMonth.reduce((s, m) => s + m.spend, 0);
 
   // Churn: subs canceladas este mes calendario
   const curMonthKey = cdmxDayKey(now).slice(0, 7);

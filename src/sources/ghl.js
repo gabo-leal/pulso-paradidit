@@ -39,5 +39,6 @@ export async function leadsCount(token, locationId, pipelineId, date, endDate, f
   const res = await fetchImpl(u.toString(), { headers: headers(token) });
   if (!res.ok) throw new Error('GHL leads ' + res.status);
   const body = await res.json();
-  return body.data?.meta?.total ?? 0;
+  // La API REST devuelve meta en la raíz (body.meta); el MCP la envolvía en body.data.meta.
+  return body.meta?.total ?? body.data?.meta?.total ?? 0;
 }
