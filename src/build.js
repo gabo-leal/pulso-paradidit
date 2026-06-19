@@ -113,17 +113,13 @@ export function assemble(raw, nowEpochSec) {
   const REPORTE_TFOOT = `<tr><td>Total 2026</td><td class="dim">${peso(t.ghl)}</td><td class="dim">${peso(t.lw)}</td><td>${peso(t.ingresos)}</td><td class="egr">${peso(t.ads)}</td><td class="pos">${tResMark}</td></tr>`;
 
   // ── Gráfico SVG ────────────────────────────────────────────────────────────
+  // incomeByDay: SOLO GHL funnel (LW recurring excluido — no atribuible a gasto en ads)
   const incomeByDay = {};
   for (const tx of (raw.ghlTx || [])) {
     if (tx.status === 'succeeded') {
       const k = cdmxDayKey(epochOf(tx.createdAt));
       incomeByDay[k] = (incomeByDay[k] || 0) + tx.amount;
     }
-  }
-  // LW charges también van al gráfico
-  for (const c of lwChargesOk) {
-    const k = cdmxDayKey(c.created);
-    incomeByDay[k] = (incomeByDay[k] || 0) + c.amount / 100;
   }
   const spendByDay = {};
   for (const d of metaDaily) spendByDay[d.date] = d.spend;

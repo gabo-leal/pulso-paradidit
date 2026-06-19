@@ -1,7 +1,9 @@
 // pulso/tests/build.test.js
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { assemble } from '../src/build.js';
+import { render } from '../src/render.js';
 
 // Fixed "now": 2026-06-19 18:00:00 UTC-6 (midnight CDMX = 06:00 UTC next day)
 const now = Date.UTC(2026, 5, 19, 18, 0, 0) / 1000;
@@ -100,4 +102,10 @@ test('assemble con ghlTx con ventas calcula ingresos correctamente', () => {
   assert.equal(data.ING_7D, '$1,500');
   assert.equal(data.H_ING, '$1,500');
   assert.equal(data.H_VENTAS, '2');
+});
+
+test('render(template, assemble(fixture)) no lanza — todo {{marcador}} cubierto', () => {
+  const tpl = readFileSync(new URL('../templates/pulso.template.html', import.meta.url), 'utf8');
+  const data = assemble(fixture, now);
+  assert.doesNotThrow(() => render(tpl, data), 'render lanzó: algún marcador del template no está cubierto por assemble');
 });

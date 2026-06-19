@@ -3,7 +3,8 @@
 // Branding LOCKED — no modificar colores, fuentes, ni layout.
 
 export function buildSvg(incomeByDay, spendByDay, days, todayKey) {
-  const L = 44, R = 1356, T = 40, B = 392, plotH = B - T, VMAX = 6000;
+  const L = 44, R = 1356, T = 40, B = 392, plotH = B - T;
+  const VMAX = Math.max(6000, ...Object.values(incomeByDay), ...Object.values(spendByDay));
   const n = days.length;
   // Si no hay días, devolver SVG vacío pero válido
   if (n === 0) {
