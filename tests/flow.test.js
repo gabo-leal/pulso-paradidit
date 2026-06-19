@@ -15,8 +15,9 @@ test('sumChargesInWindow suma solo lo que cae en la ventana', () => {
 });
 
 test('roas y cpa manejan división por cero', () => {
-  assert.equal(roas(4792, 4500), 1.07);
+  assert.equal(roas(4792, 4500), 1.06);
   assert.equal(roas(100, 0), 0);
+  assert.equal(roas(9001, 9000), 1.00); // round-to-nearest: 1.0001.. -> 1.00 (ceil would give 1.01)
   assert.equal(cpa(4500, 20), 225);
   assert.equal(cpa(100, 0), 0);
 });

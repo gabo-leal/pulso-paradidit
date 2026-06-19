@@ -9,7 +9,7 @@ export function sumChargesInWindow(items, win, getEpoch, getAmount) {
 
 export function roas(ingresosFunnel, gasto) {
   if (!gasto) return 0;
-  return Math.ceil((ingresosFunnel / gasto) * 100) / 100;
+  return Math.round((ingresosFunnel / gasto) * 100) / 100;
 }
 
 export function cpa(gasto, ventas) {
