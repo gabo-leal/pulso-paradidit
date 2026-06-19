@@ -12,6 +12,6 @@ test('windows divide en 7d y 7d previos sin solape', () => {
   const now = Date.UTC(2026, 5, 19, 18, 0, 0) / 1000;
   const w = windows(now);
   assert.equal(w.prev7.end, w.last7.start); // contiguos
-  assert.ok(w.last7.end >= w.last7.start);
-  assert.equal(Math.round((w.last7.end - w.last7.start) / 86400), 7);
+  assert.equal(w.prev7.end - w.prev7.start, 7 * 86400); // ventana previa = exactamente 7 días
+  assert.ok(w.last7.end > w.last7.start);
 });
