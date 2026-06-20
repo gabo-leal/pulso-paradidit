@@ -299,7 +299,7 @@ export async function main() {
   const SOCIAL_PLATFORMS = ['instagram','facebook','tiktok','youtube'];
   let social = [], campaigns = [];
   try {
-    const stats = await socialStats(GHL_TOKEN, SOCIAL_IDS, SOCIAL_PLATFORMS);
+    const stats = await socialStats(GHL_TOKEN, LOC, SOCIAL_IDS, SOCIAL_PLATFORMS);
     social = socialSummary(stats, SOCIAL_PLATFORMS);
   } catch (e) { console.error('Redes degradado:', e.message); }
   try {

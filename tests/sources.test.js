@@ -82,11 +82,12 @@ test('listSocialAccounts extrae profileId/platform/name', async () => {
     { profileId: 'p2', platform: 'tiktok', name: 'gabo.leal' } ]);
 });
 
-test('socialStats hace POST con body y devuelve results', async () => {
+test('socialStats hace POST con locationId en query y lee results de la raíz (REST)', async () => {
   let captured;
-  const mock = async (url, opts) => { captured = { url, opts }; return { ok: true, json: async () => ({ data: { results: { totals: { followers: 174 } } } }) }; };
-  const r = await socialStats('T', ['p1'], ['instagram'], mock);
+  const mock = async (url, opts) => { captured = { url, opts }; return { ok: true, json: async () => ({ results: { totals: { followers: 174 } } }) }; };
+  const r = await socialStats('T', 'loc123', ['p1'], ['instagram'], mock);
   assert.equal(r.totals.followers, 174);
   assert.equal(captured.opts.method, 'POST');
-  assert.match(captured.opts.body, /p1/);
+  assert.match(captured.url, /locationId=loc123/);
+  assert.deepEqual(JSON.parse(captured.opts.body), { profileIds: ['p1'], platforms: ['instagram'] });
 });
