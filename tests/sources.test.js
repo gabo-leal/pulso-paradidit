@@ -2,6 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { leadsCount } from '../src/sources/ghl.js';
 import { parseMetaAmount, dailySpend, monthlySpend, campaignInsights } from '../src/sources/meta.js';
+import { listSocialAccounts, socialStats } from '../src/sources/ghlSocial.js';
 
 test('parseMetaAmount limpia "$4,500.00 MXN" a 4500', () => {
   assert.equal(parseMetaAmount('$4,500.00 MXN'), 4500);
@@ -68,4 +69,24 @@ test('campaignInsights parsea ROAS/purchases por campaña y pagina', async () =>
   assert.deepEqual(r[1], { name: 'Retargeting', spend: 900, roas: 0, purchases: 0, ctr: 1.2, cpc: 2.1 });
   assert.equal(calls, 2);
   assert.equal(urls[1], 'https://graph.facebook.com/next');
+});
+
+test('listSocialAccounts extrae profileId/platform/name', async () => {
+  const mock = async () => ({ ok: true, json: async () => ({
+    data: { results: { accounts: [
+      { profileId: 'p1', platform: 'instagram', name: 'gaboleal' },
+      { profileId: 'p2', platform: 'tiktok', name: 'gabo.leal' } ] } } }) });
+  const r = await listSocialAccounts('T', 'loc', mock);
+  assert.deepEqual(r, [
+    { profileId: 'p1', platform: 'instagram', name: 'gaboleal' },
+    { profileId: 'p2', platform: 'tiktok', name: 'gabo.leal' } ]);
+});
+
+test('socialStats hace POST con body y devuelve results', async () => {
+  let captured;
+  const mock = async (url, opts) => { captured = { url, opts }; return { ok: true, json: async () => ({ data: { results: { totals: { followers: 174 } } } }) }; };
+  const r = await socialStats('T', ['p1'], ['instagram'], mock);
+  assert.equal(r.totals.followers, 174);
+  assert.equal(captured.opts.method, 'POST');
+  assert.match(captured.opts.body, /p1/);
 });
