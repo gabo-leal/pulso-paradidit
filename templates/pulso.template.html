@@ -107,6 +107,10 @@
     .mtab th:nth-child(5),.mtab td:nth-child(5){display:none}
     .mtab th,.mtab td{padding:12px 10px}
   }
+  .tabs{display:flex;gap:6px;margin:22px 0 4px}
+  .tab{font-family:'Barlow Condensed';font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:30px;padding:8px 18px;cursor:pointer}
+  .tab.active{color:#fff;background:var(--violet-soft);border-color:var(--violet)}
+  section[data-tab][hidden]{display:none}
 </style>
 </head>
 <body>
@@ -118,6 +122,13 @@
 </header>
 
 <div class="wrap">
+  <div class="tabs">
+    <button class="tab active" data-go="general">General</button>
+    <button class="tab" data-go="redes">Redes</button>
+    <button class="tab" data-go="ads">Ads</button>
+  </div>
+
+  <section data-tab="general">
 
   <!-- RESUMEN AÑO -->
   <div class="year-head">2026 · Año hasta hoy <span>(MXN · LearnWorlds todo el año · GHL desde marzo)</span></div>
@@ -221,6 +232,38 @@
     Pulso Paradid-it · Fase 0 manual · datos vivos de GHL + Meta (MCP) + Stripe LearnWorlds (API)
   </div>
 
+  </section>
+
+  <section data-tab="redes" hidden>
+    <h2 class="sec">Redes sociales · 7 días</h2>
+    <div class="grid">{{REDES_CARDS}}</div>
+    <div class="legend">Crecimiento de seguidores, alcance y engagement de la semana (no el total acumulado). Fuente: GHL Social Planner.</div>
+  </section>
+
+  <section data-tab="ads" hidden>
+    <h2 class="sec">Ads · por campaña (Meta, 7 días)</h2>
+    <div class="chartcard">
+      <div class="legend" style="margin:0 0 6px">{{ADS_RESUMEN}}</div>
+      <table class="mtab">
+        <thead><tr><th>Campaña</th><th>Gasto</th><th>ROAS</th><th>CPA</th><th>CTR</th></tr></thead>
+        <tbody>{{ADS_TBODY}}</tbody>
+      </table>
+    </div>
+  </section>
+
 </div>
+<script>
+  (function(){
+    var tabs=document.querySelectorAll('.tab'), secs=document.querySelectorAll('section[data-tab]');
+    function go(name){
+      secs.forEach(function(s){ s.hidden = s.getAttribute('data-tab')!==name; });
+      tabs.forEach(function(t){ t.classList.toggle('active', t.getAttribute('data-go')===name); });
+      try{ localStorage.setItem('pulsoTab', name); }catch(e){}
+    }
+    tabs.forEach(function(t){ t.addEventListener('click', function(){ go(t.getAttribute('data-go')); }); });
+    var saved; try{ saved=localStorage.getItem('pulsoTab'); }catch(e){}
+    if(saved) go(saved);
+  })();
+</script>
 </body>
 </html>
