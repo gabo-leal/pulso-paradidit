@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { leadsCount } from '../src/sources/ghl.js';
-import { parseMetaAmount, dailySpend, monthlySpend } from '../src/sources/meta.js';
+import { parseMetaAmount, dailySpend, monthlySpend, campaignInsights } from '../src/sources/meta.js';
 
 test('parseMetaAmount limpia "$4,500.00 MXN" a 4500', () => {
   assert.equal(parseMetaAmount('$4,500.00 MXN'), 4500);
@@ -45,4 +45,24 @@ test('monthlySpend mapea date_start a month y spend a number', async () => {
     { month: '2026-01', spend: 1500 },
     { month: '2026-02', spend: 2000.5 }
   ]);
+});
+
+test('campaignInsights parsea ROAS/purchases por campaña y pagina', async () => {
+  let calls = 0;
+  const mock = async (url) => {
+    calls++;
+    if (calls === 1) return { ok: true, json: async () => ({
+      data: [{ campaign_name: 'Prospecting', spend: '4500.00', ctr: '2.88', cpc: '1.72',
+               purchase_roas: [{ action_type: 'omni_purchase', value: '2.03' }],
+               actions: [{ action_type: 'omni_purchase', value: '3' }] }],
+      paging: { next: 'https://graph.facebook.com/next' } }) };
+    return { ok: true, json: async () => ({
+      data: [{ campaign_name: 'Retargeting', spend: '900.00', ctr: '1.20', cpc: '2.10',
+               purchase_roas: [], actions: [] }] }) };
+  };
+  const r = await campaignInsights('T', '123', 'last_7d', mock);
+  assert.equal(r.length, 2);
+  assert.deepEqual(r[0], { name: 'Prospecting', spend: 4500, roas: 2.03, purchases: 3, ctr: 2.88, cpc: 1.72 });
+  assert.deepEqual(r[1], { name: 'Retargeting', spend: 900, roas: 0, purchases: 0, ctr: 1.2, cpc: 2.1 });
+  assert.equal(calls, 2);
 });
