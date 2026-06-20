@@ -9,7 +9,10 @@ import { buildSvg } from './chart.js';
 import { render } from './render.js';
 import { listActiveSubs, listChargesSince, listCanceledSubs } from './sources/stripeLW.js';
 import { listTransactions, leadsCount } from './sources/ghl.js';
-import { dailySpend, monthlySpend } from './sources/meta.js';
+import { dailySpend, monthlySpend, campaignInsights } from './sources/meta.js';
+import { listSocialAccounts, socialStats } from './sources/ghlSocial.js';
+import { campaignBreakdown } from './metrics/ads.js';
+import { socialSummary } from './metrics/social.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const peso = n => '$' + Math.round(n).toLocaleString('en-US');
@@ -162,6 +165,25 @@ export function assemble(raw, nowEpochSec) {
   const leadsDelta = raw.leadsPrev !== undefined ? deltaTxt(raw.leads7d, raw.leadsPrev) : '—';
   const H_LEADS_PREV = `${raw.leadsPrev ?? 0} · ${leadsDelta}`;
 
+  // ── Redes sociales ────────────────────────────────────────────────────────
+  const PLAT_LABEL = { instagram: 'Instagram', facebook: 'Facebook', tiktok: 'TikTok', youtube: 'YouTube' };
+  const social = raw.social ?? [];
+  const REDES_CARDS = social.length
+    ? social.map(s => `<div class="card"><div class="k">${PLAT_LABEL[s.platform] || s.platform}</div>`
+        + `<div class="v">+${s.followersGrowth.toLocaleString('en-US')} <span style="font-size:14px;color:var(--muted)">seguidores</span></div>`
+        + `<div class="sub">Alcance ${peso(s.reach).slice(1)} · Impr. ${s.impressions.toLocaleString('en-US')} · Eng. ${s.engagement.toLocaleString('en-US')}</div>`
+        + pill(s.reachChange >= 0 ? 'up' : 'down', `${s.reachChange >= 0 ? '▲' : '▼'} ${Math.abs(Math.round(s.reachChange))}% alcance vs sem. previa`)
+        + `</div>`).join('')
+    : '<div class="card"><div class="k">Redes</div><div class="sub">Sin datos — verifica el scope Social Planner del token GHL.</div></div>';
+
+  // ── Ads campañas ──────────────────────────────────────────────────────────
+  const ab = campaignBreakdown(raw.campaigns ?? []);
+  const ADS_TBODY = ab.rows.length
+    ? ab.rows.map(r => `<tr><td>${r.nombre}${r.fatiga ? ' <span class="pill down" style="font-size:10px">fatiga</span>' : ''}</td>`
+        + `<td>${peso(r.gasto)}</td><td>${r.roas.toFixed(2)}x</td><td>${r.cpa ? peso(r.cpa) : '—'}</td><td>${r.ctr.toFixed(2)}%</td></tr>`).join('')
+    : '<tr><td colspan="5" style="color:var(--muted)">Sin campañas activas en el periodo.</td></tr>';
+  const ADS_RESUMEN = ab.mejor ? `Mejor ROAS: <b style="color:var(--green)">${ab.mejor}</b> · Peor: <b style="color:#ff8a8a">${ab.peor}</b>` : 'Sin datos de campañas.';
+
   // ── Assemble output ────────────────────────────────────────────────────────
   return {
     // Stamp
@@ -212,6 +234,9 @@ export function assemble(raw, nowEpochSec) {
     GRAFICO_SVG:  buildSvg(incomeByDay, spendByDay, chartDays, todayKey),
     REPORTE_TBODY,
     REPORTE_TFOOT,
+
+    // Redes y Ads
+    REDES_CARDS, ADS_TBODY, ADS_RESUMEN,
   };
 }
 
@@ -269,6 +294,18 @@ export async function main() {
   const churnMes    = canceledSubs.filter(s => s.canceled_at && s.canceled_at >= mtdStart).length;
   const churnTotal  = canceledSubs.length;
 
+  // ── Redes y Ads (con degradación) ─────────────────────────────────────────
+  const SOCIAL_IDS = ['69a639d617b8453c8e979978','69a6394e3a126dfca794e142','69a665a417b8459086c70282','69a639ef50b3db4fff080413'];
+  const SOCIAL_PLATFORMS = ['instagram','facebook','tiktok','youtube'];
+  let social = [], campaigns = [];
+  try {
+    const stats = await socialStats(GHL_TOKEN, SOCIAL_IDS, SOCIAL_PLATFORMS);
+    social = socialSummary(stats, SOCIAL_PLATFORMS);
+  } catch (e) { console.error('Redes degradado:', e.message); }
+  try {
+    campaigns = await campaignInsights(META_TOKEN, ACC, 'last_7d');
+  } catch (e) { console.error('Ads campañas degradado:', e.message); }
+
   const raw = {
     stripeSubs,
     stripeCharges:     stripeChargesYear,
@@ -282,6 +319,8 @@ export async function main() {
     adsByMonth,
     churnMes,
     churnTotal,
+    social,
+    campaigns,
   };
 
   const data = assemble(raw, now);

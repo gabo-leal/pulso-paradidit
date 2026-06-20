@@ -104,10 +104,21 @@ test('assemble con ghlTx con ventas calcula ingresos correctamente', () => {
   assert.equal(data.H_VENTAS, '2');
 });
 
-test('render(template, assemble(fixture)) no lanza — todo {{marcador}} cubierto', () => {
+test('render(template, assemble(fixture)) no lanza — todo {{marcador}} cubierto (caso degradado social=[] campaigns=[])', () => {
   const tpl = readFileSync(new URL('../templates/pulso.template.html', import.meta.url), 'utf8');
-  const data = assemble(fixture, now);
+  const data = assemble({ ...fixture, social: [], campaigns: [] }, now);
   assert.doesNotThrow(() => render(tpl, data), 'render lanzó: algún marcador del template no está cubierto por assemble');
+});
+
+test('assemble produce los marcadores de Redes y Ads', () => {
+  const now = Date.UTC(2026, 5, 19, 18, 0, 0) / 1000;
+  const data = assemble({ stripeSubs: [], stripeCharges: [], stripeChargesYear: [], ghlTx: [], ghlTxYear: [],
+    leads7d: 0, leadsPrev: 0, metaDaily: [], metaSpendYear: 0, adsByMonth: [], churnMes: 0, churnTotal: 0,
+    social: [{ platform: 'instagram', impressions: 60723, impressionsChange: 205.92, reach: 39900, reachChange: 273.98, engagement: 673, engagementChange: 154.92, followersGrowth: 174 }],
+    campaigns: [{ name: 'A', spend: 4500, roas: 2.0, purchases: 3, ctr: 3.0, cpc: 1.7 }] }, now);
+  assert.ok(data.REDES_CARDS.includes('instagram') || data.REDES_CARDS.includes('Instagram'));
+  assert.ok(data.ADS_TBODY.includes('<tr>'));
+  assert.notEqual(data.ADS_RESUMEN, undefined);
 });
 
 // ── deltaTxt unit tests ──────────────────────────────────────────────────────
