@@ -49,7 +49,9 @@ test('monthlySpend mapea date_start a month y spend a number', async () => {
 
 test('campaignInsights parsea ROAS/purchases por campaña y pagina', async () => {
   let calls = 0;
+  const urls = [];
   const mock = async (url) => {
+    urls.push(url);
     calls++;
     if (calls === 1) return { ok: true, json: async () => ({
       data: [{ campaign_name: 'Prospecting', spend: '4500.00', ctr: '2.88', cpc: '1.72',
@@ -65,4 +67,5 @@ test('campaignInsights parsea ROAS/purchases por campaña y pagina', async () =>
   assert.deepEqual(r[0], { name: 'Prospecting', spend: 4500, roas: 2.03, purchases: 3, ctr: 2.88, cpc: 1.72 });
   assert.deepEqual(r[1], { name: 'Retargeting', spend: 900, roas: 0, purchases: 0, ctr: 1.2, cpc: 2.1 });
   assert.equal(calls, 2);
+  assert.equal(urls[1], 'https://graph.facebook.com/next');
 });

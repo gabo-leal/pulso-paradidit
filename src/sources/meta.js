@@ -39,7 +39,7 @@ export async function monthlySpend(token, accountId, since, until, fetchImpl = g
 export async function campaignInsights(token, accountId, datePreset = 'last_7d', fetchImpl = globalThis.fetch) {
   const u = new URL(`${BASE}/act_${accountId}/insights`);
   u.searchParams.set('level', 'campaign');
-  u.searchParams.set('fields', 'campaign_name,spend,purchase_roas,actions,ctr,cpc,impressions');
+  u.searchParams.set('fields', 'campaign_name,spend,purchase_roas,actions,ctr,cpc');
   u.searchParams.set('date_preset', datePreset);
   u.searchParams.set('access_token', token);
   const out = [];
@@ -49,7 +49,7 @@ export async function campaignInsights(token, accountId, datePreset = 'last_7d',
     if (!res.ok) throw new Error('Meta ' + res.status);
     const body = await res.json();
     for (const d of (body.data ?? [])) {
-      const roasItem = (d.purchase_roas ?? []).find(x => x.action_type === 'omni_purchase') ?? (d.purchase_roas ?? [])[0];
+      const roasItem = (d.purchase_roas ?? []).find(x => x.action_type === 'omni_purchase');
       const purchItem = (d.actions ?? []).find(x => x.action_type === 'omni_purchase');
       out.push({
         name: d.campaign_name,
