@@ -23,10 +23,10 @@ const fixture = {
   churnTotal:        15,
 };
 
-test('assemble produce todas las claves del template (43) sin undefined', () => {
+test('assemble produce todas las claves del template (46) sin undefined', () => {
   const data = assemble(fixture, now);
 
-  // Las 43 claves que el template requiere
+  // Las 46 claves que el template requiere
   const claves = [
     'ACTUALIZADO',
     'ANIO_INGRESOS', 'ANIO_DESGLOSE', 'ANIO_GASTO', 'ANIO_RESULTADO', 'ANIO_ROAS',
@@ -40,12 +40,13 @@ test('assemble produce todas las claves del template (43) sin undefined', () => 
     'REPORTE_TBODY', 'REPORTE_TFOOT',
     'TRIAL_COHORTE', 'TRIAL_RENOVARON', 'TRIAL_ERROR', 'TRIAL_ABIERTOS', 'TRIAL_CANCELARON',
     'TRIAL_CONVERSION', 'TRIAL_CONVERSION_POT', 'TRIAL_MRR_GANADO', 'TRIAL_EN_RIESGO', 'TRIAL_DONA_SVG',
+    'FORECAST_JS', 'FORECAST_DEFAULTS',
   ];
 
   for (const k of claves) {
     assert.ok(data[k] !== undefined, `falta clave: ${k}`);
   }
-  assert.equal(claves.length, 44, 'el test cubre las 44 claves');
+  assert.equal(claves.length, 46, 'el test cubre las 46 claves');
 });
 
 test('claves TRIAL_* se calculan desde ghlTxYear (incluye tx fallidas)', () => {
@@ -76,6 +77,32 @@ test('claves TRIAL_* se calculan desde ghlTxYear (incluye tx fallidas)', () => {
   assert.equal(data.TRIAL_EN_RIESGO, '$349');
   assert.match(data.TRIAL_DONA_SVG, /<svg/);
   assert.match(data.TRIAL_DONA_SVG, /Fondos insuficientes/);
+});
+
+test('FORECAST_JS revive con new Function (sin scope del módulo) y proyecta', () => {
+  const data = assemble(fixture, now);
+  const fn = new Function('return ' + data.FORECAST_JS)();
+  const rows = fn({ subsIniciales: 0, trialsMes: 0, conversionPct: 0, churnPct: 5, precio: 349 });
+  assert.equal(rows.length, 6);
+  rows.forEach(r => assert.equal(r.mrr, 0));
+});
+
+test('FORECAST_DEFAULTS trae los datos reales de trials en JSON', () => {
+  const iso = secsAgo => new Date((now - secsAgo) * 1000).toISOString();
+  const DAY = 86400;
+  const data = assemble({
+    ...fixture,
+    ghlTxYear: [
+      { amount: 10, status: 'succeeded', subscriptionId: 'r1', createdAt: iso(40 * DAY) },
+      { amount: 349, status: 'succeeded', subscriptionId: 'r1', createdAt: iso(5 * DAY) },
+      { amount: 10, status: 'succeeded', subscriptionId: 'e1', createdAt: iso(40 * DAY) },
+      { amount: 349, status: 'failed', subscriptionId: 'e1', createdAt: iso(5 * DAY) },
+      { amount: 10, status: 'succeeded', subscriptionId: 'a1', createdAt: iso(3 * DAY) },
+    ],
+  }, now);
+  assert.deepEqual(JSON.parse(data.FORECAST_DEFAULTS), {
+    trialsMes: 1, conversionPct: 50, churnPct: 5, subsIniciales: 1, precio: 349, meses: 6,
+  });
 });
 
 test('TRIAL_DONA_SVG muestra mensaje sin dona cuando no hay errores de pago', () => {

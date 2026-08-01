@@ -13,7 +13,8 @@ import { dailySpend, monthlySpend, campaignInsights } from './sources/meta.js';
 import { listSocialAccounts, socialStats } from './sources/ghlSocial.js';
 import { campaignBreakdown } from './metrics/ads.js';
 import { socialSummary } from './metrics/social.js';
-import { trialsSummary } from './metrics/trials.js';
+import { trialsSummary, FULL_PRICE } from './metrics/trials.js';
+import { proyectarMrr } from './metrics/forecast.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const peso = n => '$' + Math.round(n).toLocaleString('en-US');
@@ -256,6 +257,17 @@ export function assemble(raw, nowEpochSec) {
     TRIAL_MRR_GANADO: peso(tr.mrrGanado),
     TRIAL_EN_RIESGO:  peso(tr.enRiesgo),
     TRIAL_DONA_SVG,
+
+    // Forecast (módulo interactivo: la función viaja como fuente al navegador)
+    FORECAST_JS: proyectarMrr.toString(),
+    FORECAST_DEFAULTS: JSON.stringify({
+      trialsMes: tr.abiertos,
+      conversionPct: Math.round(tr.conversion * 100),
+      churnPct: 5,
+      subsIniciales: tr.renovaron,
+      precio: FULL_PRICE,
+      meses: 6,
+    }),
   };
 }
 

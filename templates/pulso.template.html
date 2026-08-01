@@ -111,6 +111,12 @@
   .tab{font-family:'Barlow Condensed';font-weight:700;font-size:15px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:transparent;border:1px solid var(--border);border-radius:30px;padding:8px 18px;cursor:pointer}
   .tab.active{color:#fff;background:var(--violet-soft);border-color:var(--violet)}
   section[data-tab][hidden]{display:none}
+
+  /* Forecast: inputs interactivos */
+  .fctl input{background:var(--surface-2);border:1px solid var(--border);border-radius:10px;color:#fff;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:24px;padding:8px 12px;width:100%;margin-top:8px}
+  .fctl input:focus{border-color:var(--violet);outline:none}
+  .fbtn{font-family:'Barlow Condensed',sans-serif;font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);background:none;border:1px solid var(--border);border-radius:30px;padding:8px 18px;cursor:pointer;margin-top:14px}
+  .fbtn:hover{color:#fff;border-color:var(--violet)}
 </style>
 </head>
 <body>
@@ -125,6 +131,7 @@
   <div class="tabs">
     <button class="tab active" data-go="general">General</button>
     <button class="tab" data-go="trials">Trials</button>
+    <button class="tab" data-go="forecast">Forecast</button>
     <button class="tab" data-go="redes">Redes</button>
     <button class="tab" data-go="ads">Ads</button>
   </div>
@@ -277,6 +284,32 @@
     <div class="legend">Cohorte = subs cuyo <b>primer cobro exitoso</b> fue el trial de $10 (intentos de $10 fallidos no cuentan). La conversión <b>excluye abiertos</b> — aún pueden renovar. Los "error de pago" pueden recuperarse solos (dunning de Stripe): si el cobro pasa, se mueven a Renovaron en la siguiente actualización. Solo agregados, sin datos de contactos. Fuente: transacciones GHL (Stripe + PayPal), no el funnel.</div>
   </section>
 
+  <section data-tab="forecast" hidden>
+    <h2 class="sec">Forecast · proyección de MRR del funnel de trials</h2>
+    <div class="grid">
+      <div class="card fctl"><div class="k">Trials nuevos / mes</div>
+        <input type="number" id="f-trials" min="0" step="1">
+        <div class="sub">Real hoy: <span id="fd-trials"></span> abiertos</div></div>
+      <div class="card fctl"><div class="k">Conversión %</div>
+        <input type="number" id="f-conv" min="0" max="100" step="0.5">
+        <div class="sub">Real hoy: <span id="fd-conv"></span>% (cohorte madura)</div></div>
+      <div class="card fctl"><div class="k">Churn mensual %</div>
+        <input type="number" id="f-churn" min="0" max="100" step="0.5">
+        <div class="sub">Supuesto — aún sin dato real del funnel</div></div>
+      <div class="card fctl"><div class="k">Subs activos hoy</div>
+        <input type="number" id="f-subs" min="0" step="1">
+        <div class="sub">Real hoy: <span id="fd-subs"></span> renovados</div></div>
+    </div>
+    <button class="fbtn" id="f-reset">↺ Restablecer a datos reales</button>
+    <div class="chartcard" style="margin-top:14px">
+      <table class="mtab">
+        <thead><tr><th>Mes</th><th>Nuevos subs</th><th>Subs activos</th><th>MRR proyectado</th><th>Δ</th></tr></thead>
+        <tbody id="f-tbody"></tbody>
+      </table>
+    </div>
+    <div class="legend">Modelo: subs<sub>m</sub> = subs<sub>m−1</sub> × (1 − churn) + trials × conversión · MRR = subs × $349. El mes 1 es el <b>mes próximo</b> (el actual ya está en el dashboard real). Los nuevos subs no churnean su primer mes. Con churn &gt; 0 el MRR converge a un techo: trials × conversión ÷ churn × $349. Tus cambios se guardan en este navegador; "Restablecer" vuelve a los datos reales del último build.</div>
+  </section>
+
 </div>
 <script>
   (function(){
@@ -289,6 +322,65 @@
     tabs.forEach(function(t){ t.addEventListener('click', function(){ go(t.getAttribute('data-go')); }); });
     var saved; try{ saved=localStorage.getItem('pulsoTab'); }catch(e){}
     if(saved) go(saved);
+  })();
+</script>
+<script>
+  var proyectarMrr = {{FORECAST_JS}};
+  var FORECAST_DEFAULTS = {{FORECAST_DEFAULTS}};
+  (function(){
+    var MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+    var ids = { trialsMes:'f-trials', conversionPct:'f-conv', churnPct:'f-churn', subsIniciales:'f-subs' };
+    var $ = function(id){ return document.getElementById(id); };
+    var peso = function(n){ return '$' + Math.round(n).toLocaleString('en-US'); };
+
+    // defaults reales visibles junto a cada input
+    $('fd-trials').textContent = FORECAST_DEFAULTS.trialsMes;
+    $('fd-conv').textContent   = FORECAST_DEFAULTS.conversionPct;
+    $('fd-subs').textContent   = FORECAST_DEFAULTS.subsIniciales;
+
+    function valores(){
+      var v = {};
+      for (var k in ids) v[k] = parseFloat($(ids[k]).value);
+      return v;
+    }
+    function poblar(vals){
+      for (var k in ids) $(ids[k]).value = vals[k];
+    }
+    function recalc(){
+      var v = valores();
+      var rows = proyectarMrr({ subsIniciales:v.subsIniciales, trialsMes:v.trialsMes,
+        conversionPct:v.conversionPct, churnPct:v.churnPct,
+        precio:FORECAST_DEFAULTS.precio, meses:FORECAST_DEFAULTS.meses });
+      var hoy = new Date();
+      $('f-tbody').innerHTML = rows.map(function(r){
+        var mi = (hoy.getMonth() + r.mes) % 12;
+        var anio = hoy.getFullYear() + Math.floor((hoy.getMonth() + r.mes) / 12);
+        var d = Math.round(r.delta);
+        var dTxt = (d >= 0 ? '+' : '') + peso(d).replace('$-','-$');
+        return '<tr><td>' + MES[mi] + ' ' + anio + '</td>'
+          + '<td class="dim">+' + Math.round(r.nuevos) + '</td>'
+          + '<td>' + Math.round(r.subs) + '</td>'
+          + '<td>' + peso(r.mrr) + '</td>'
+          + '<td class="' + (d >= 0 ? 'pos' : 'egr') + '">' + dTxt + '</td></tr>';
+      }).join('');
+    }
+    function persistir(){
+      try{ localStorage.setItem('pulsoForecast', JSON.stringify(valores())); }catch(e){}
+    }
+
+    var guardado = {};
+    try{ guardado = JSON.parse(localStorage.getItem('pulsoForecast')) || {}; }catch(e){}
+    var inicial = {};
+    for (var k in ids) inicial[k] = (typeof guardado[k] === 'number' && isFinite(guardado[k])) ? guardado[k] : FORECAST_DEFAULTS[k];
+    poblar(inicial);
+    recalc();
+
+    for (var k2 in ids) $(ids[k2]).addEventListener('input', function(){ persistir(); recalc(); });
+    $('f-reset').addEventListener('click', function(){
+      try{ localStorage.removeItem('pulsoForecast'); }catch(e){}
+      poblar(FORECAST_DEFAULTS);
+      recalc();
+    });
   })();
 </script>
 </body>
