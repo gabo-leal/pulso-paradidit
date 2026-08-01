@@ -12,10 +12,12 @@ export function proyectarMrr(p) {
 
   var rows = [];
   var mrrPrev = subs * precio;
+  var acumulado = 0;
   for (var m = 1; m <= meses; m++) {
     subs = subs * (1 - churn) + nuevos;
     var mrr = subs * precio;
-    rows.push({ mes: m, nuevos: nuevos, subs: subs, mrr: mrr, delta: mrr - mrrPrev });
+    acumulado += mrr;
+    rows.push({ mes: m, nuevos: nuevos, subs: subs, mrr: mrr, delta: mrr - mrrPrev, acumulado: acumulado });
     mrrPrev = mrr;
   }
   return rows;

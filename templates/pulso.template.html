@@ -303,11 +303,11 @@
     <button class="fbtn" id="f-reset">↺ Restablecer a datos reales</button>
     <div class="chartcard" style="margin-top:14px">
       <table class="mtab">
-        <thead><tr><th>Mes</th><th>Nuevos subs</th><th>Subs activos</th><th>MRR proyectado</th><th>Δ</th></tr></thead>
+        <thead><tr><th>Mes</th><th>Nuevos subs</th><th>Subs activos</th><th>MRR proyectado</th><th>Δ</th><th>Acumulado</th></tr></thead>
         <tbody id="f-tbody"></tbody>
       </table>
     </div>
-    <div class="legend">Modelo: subs<sub>m</sub> = subs<sub>m−1</sub> × (1 − churn) + trials × conversión · MRR = subs × $349. El mes 1 es el <b>mes próximo</b> (el actual ya está en el dashboard real). Los nuevos subs no churnean su primer mes. Con churn &gt; 0 el MRR converge a un techo: trials × conversión ÷ churn × $349. Tus cambios se guardan en este navegador; "Restablecer" vuelve a los datos reales del último build.</div>
+    <div class="legend">Modelo: subs<sub>m</sub> = subs<sub>m−1</sub> × (1 − churn) + trials × conversión · MRR = subs × $349. El mes 1 es el <b>mes próximo</b> (el actual ya está en el dashboard real). Los nuevos subs no churnean su primer mes. Con churn &gt; 0 el MRR converge a un techo: trials × conversión ÷ churn × $349. <b>Acumulado</b> = suma de los MRR proyectados hasta ese mes (lo que habrías cobrado en total por renovaciones; no incluye los $10 de entrada). Tus cambios se guardan en este navegador; "Restablecer" vuelve a los datos reales del último build.</div>
   </section>
 
 </div>
@@ -361,7 +361,8 @@
           + '<td class="dim">+' + Math.round(r.nuevos) + '</td>'
           + '<td>' + Math.round(r.subs) + '</td>'
           + '<td>' + peso(r.mrr) + '</td>'
-          + '<td class="' + (d >= 0 ? 'pos' : 'egr') + '">' + dTxt + '</td></tr>';
+          + '<td class="' + (d >= 0 ? 'pos' : 'egr') + '">' + dTxt + '</td>'
+          + '<td>' + peso(r.acumulado) + '</td></tr>';
       }).join('');
     }
     function persistir(){

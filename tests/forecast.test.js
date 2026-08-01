@@ -43,6 +43,17 @@ test('arrancando exactamente en el techo la serie es constante (delta 0)', () =>
   });
 });
 
+test('acumulado: suma corriente del MRR mes a mes', () => {
+  const rows = proyectarMrr({ ...base, churnPct: 0 });
+  // sin churn: mrr_m = (10 + 10m)×349 → acumulado_m = Σ
+  let suma = 0;
+  rows.forEach(r => {
+    suma += r.mrr;
+    assert.equal(r.acumulado, suma);
+  });
+  assert.equal(rows[0].acumulado, rows[0].mrr);
+});
+
 test('inputs cero: todas las filas en 0', () => {
   const rows = proyectarMrr({ subsIniciales: 0, trialsMes: 0, conversionPct: 0, churnPct: 5, precio: 349 });
   rows.forEach(r => {
@@ -50,6 +61,7 @@ test('inputs cero: todas las filas en 0', () => {
     assert.equal(r.subs, 0);
     assert.equal(r.mrr, 0);
     assert.equal(r.delta, 0);
+    assert.equal(r.acumulado, 0);
   });
 });
 
