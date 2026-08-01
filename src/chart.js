@@ -115,3 +115,47 @@ export function buildSvg(incomeByDay, spendByDay, days, todayKey) {
 
   return `<svg viewBox="0 0 1400 430" width="100%" style="margin-top:10px;overflow:visible">\n${parts.join('')}\n</svg>`;
 }
+
+// ── Dona de motivos de error de pago (pestaña Trials) ─────────────────────────
+// Paleta categórica validada (dataviz, dark surface #141417): el color sigue al
+// motivo (entidad), nunca a su posición en el ranking.
+const DONUT_COLORS = {
+  'Fondos insuficientes': '#6E6BFF',
+  'Tarjeta rechazada':    '#d95926',
+  'Tarjeta expirada':     '#199e70',
+  'Otro':                 '#c98500',
+};
+
+export function buildDonutSvg(segments) {
+  const total = segments.reduce((s, x) => s + x.count, 0);
+  if (!total) return '';
+  const cx = 105, cy = 105, r = 72, sw = 30;
+  const C = 2 * Math.PI * r;
+  const GAP = segments.length > 1 ? 2 : 0; // gap de superficie entre segmentos
+
+  const parts = [];
+  let offset = C * 0.25; // arranca a las 12:00 (dashoffset corre antihorario)
+  for (const seg of segments) {
+    const len = (seg.count / total) * C;
+    const color = DONUT_COLORS[seg.motivo] || '#8A8A93';
+    parts.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-dasharray="${Math.max(len - GAP, 0.5).toFixed(1)} ${(C - len + GAP).toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"/>`);
+    offset -= len;
+  }
+
+  // Centro: total + etiqueta (tokens de texto, no color de serie)
+  parts.push(`<text x="${cx}" y="${cy - 2}" text-anchor="middle" style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:44px;fill:#fff">${total}</text>`);
+  parts.push(`<text x="${cx}" y="${cy + 22}" text-anchor="middle" style="font-family:'Barlow',sans-serif;font-size:12px;letter-spacing:.1em;fill:#8A8A93">ERROR${total === 1 ? '' : 'ES'}</text>`);
+
+  // Leyenda: swatch + motivo + count (pct)
+  let ly = cy - (segments.length * 30) / 2 + 12;
+  for (const seg of segments) {
+    const color = DONUT_COLORS[seg.motivo] || '#8A8A93';
+    const pct = Math.round((seg.count / total) * 100);
+    parts.push(`<rect x="228" y="${ly - 11}" width="12" height="12" rx="3" fill="${color}"/>`);
+    parts.push(`<text x="250" y="${ly}" style="font-family:'Barlow',sans-serif;font-size:14px;fill:#fff">${seg.motivo}</text>`);
+    parts.push(`<text x="250" y="${ly + 0.1}" dx="${seg.motivo.length * 7.2 + 10}" style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;fill:#8A8A93">${seg.count} · ${pct}%</text>`);
+    ly += 30;
+  }
+
+  return `<svg viewBox="0 0 470 210" width="100%" style="max-width:470px" role="img" aria-label="Motivos de error de pago">${parts.join('')}</svg>`;
+}

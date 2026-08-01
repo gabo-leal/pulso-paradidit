@@ -126,6 +126,7 @@
     <button class="tab active" data-go="general">General</button>
     <button class="tab" data-go="redes">Redes</button>
     <button class="tab" data-go="ads">Ads</button>
+    <button class="tab" data-go="trials">Trials</button>
   </div>
 
   <section data-tab="general">
@@ -249,6 +250,29 @@
         <tbody>{{ADS_TBODY}}</tbody>
       </table>
     </div>
+  </section>
+
+  <section data-tab="trials" hidden>
+    <h2 class="sec">Trials · PRO $10 → $349 MXN</h2>
+    <div class="grid">
+      <div class="card"><div class="k">Renovaron</div><div class="v">{{TRIAL_RENOVARON}}</div>
+        <div class="sub">MRR ganado <b style="color:#fff">{{TRIAL_MRR_GANADO}}</b> MXN/mes</div>
+        <span class="pill up">✓ cobro de $349 exitoso</span></div>
+      <div class="card"><div class="k">Error de pago</div><div class="v">{{TRIAL_ERROR}}</div>
+        <div class="sub">En riesgo <b style="color:#fff">{{TRIAL_EN_RIESGO}}</b> MXN/mes</div>
+        <span class="pill down">▲ intento de $349 fallido</span></div>
+      <div class="card"><div class="k">Abiertos</div><div class="v">{{TRIAL_ABIERTOS}}</div>
+        <div class="sub">Trial en curso (≤32 días), aún sin evento de $349</div></div>
+      <div class="card"><div class="k">Cancelaron</div><div class="v">{{TRIAL_CANCELARON}}</div>
+        <div class="sub">&gt;32 días sin ningún intento de cobro de $349</div></div>
+    </div>
+    <div class="grid" style="margin-top:12px;grid-template-columns:1fr 2fr">
+      <div class="card"><div class="k">Conversión (cohorte madura)</div><div class="v">{{TRIAL_CONVERSION}}</div>
+        <div class="sub">Renovaron ÷ (renovaron + error + cancelaron) · cohorte total: {{TRIAL_COHORTE}}</div></div>
+      <div class="card"><div class="k">¿Por qué fallan los cobros?</div>
+        <div style="margin-top:10px">{{TRIAL_DONA_SVG}}</div></div>
+    </div>
+    <div class="legend">Cohorte = subs cuyo <b>primer cobro exitoso</b> fue el trial de $10 (intentos de $10 fallidos no cuentan). La conversión <b>excluye abiertos</b> — aún pueden renovar. Los "error de pago" pueden recuperarse solos (dunning de Stripe): si el cobro pasa, se mueven a Renovaron en la siguiente actualización. Solo agregados, sin datos de contactos. Fuente: transacciones GHL (Stripe + PayPal), no el funnel.</div>
   </section>
 
 </div>

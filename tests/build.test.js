@@ -23,10 +23,10 @@ const fixture = {
   churnTotal:        15,
 };
 
-test('assemble produce todas las claves del template (34) sin undefined', () => {
+test('assemble produce todas las claves del template (43) sin undefined', () => {
   const data = assemble(fixture, now);
 
-  // Las 34 claves que el template requiere
+  // Las 43 claves que el template requiere
   const claves = [
     'ACTUALIZADO',
     'ANIO_INGRESOS', 'ANIO_DESGLOSE', 'ANIO_GASTO', 'ANIO_RESULTADO', 'ANIO_ROAS',
@@ -38,12 +38,49 @@ test('assemble produce todas las claves del template (34) sin undefined', () => 
     'CPA_7D', 'CPA_PREV', 'CPA_PILL',
     'GRAFICO_SVG',
     'REPORTE_TBODY', 'REPORTE_TFOOT',
+    'TRIAL_COHORTE', 'TRIAL_RENOVARON', 'TRIAL_ERROR', 'TRIAL_ABIERTOS', 'TRIAL_CANCELARON',
+    'TRIAL_CONVERSION', 'TRIAL_MRR_GANADO', 'TRIAL_EN_RIESGO', 'TRIAL_DONA_SVG',
   ];
 
   for (const k of claves) {
     assert.ok(data[k] !== undefined, `falta clave: ${k}`);
   }
-  assert.equal(claves.length, 34, 'el test cubre las 34 claves');
+  assert.equal(claves.length, 43, 'el test cubre las 43 claves');
+});
+
+test('claves TRIAL_* se calculan desde ghlTxYear (incluye tx fallidas)', () => {
+  const iso = secsAgo => new Date((now - secsAgo) * 1000).toISOString();
+  const DAY = 86400;
+  const data = assemble({
+    ...fixture,
+    ghlTxYear: [
+      // renovó
+      { amount: 10, status: 'succeeded', subscriptionId: 'r1', createdAt: iso(40 * DAY) },
+      { amount: 349, status: 'succeeded', subscriptionId: 'r1', createdAt: iso(5 * DAY) },
+      // error de pago
+      { amount: 10, status: 'succeeded', subscriptionId: 'e1', createdAt: iso(40 * DAY) },
+      { amount: 349, status: 'failed', subscriptionId: 'e1', createdAt: iso(5 * DAY),
+        chargeSnapshot: { last_payment_error: { decline_code: 'Your card has insufficient funds.' } } },
+      // abierto
+      { amount: 10, status: 'succeeded', subscriptionId: 'a1', createdAt: iso(3 * DAY) },
+    ],
+  }, now);
+  assert.equal(data.TRIAL_COHORTE, '3');
+  assert.equal(data.TRIAL_RENOVARON, '1');
+  assert.equal(data.TRIAL_ERROR, '1');
+  assert.equal(data.TRIAL_ABIERTOS, '1');
+  assert.equal(data.TRIAL_CANCELARON, '0');
+  assert.equal(data.TRIAL_CONVERSION, '50%');
+  assert.equal(data.TRIAL_MRR_GANADO, '$349');
+  assert.equal(data.TRIAL_EN_RIESGO, '$349');
+  assert.match(data.TRIAL_DONA_SVG, /<svg/);
+  assert.match(data.TRIAL_DONA_SVG, /Fondos insuficientes/);
+});
+
+test('TRIAL_DONA_SVG muestra mensaje sin dona cuando no hay errores de pago', () => {
+  const data = assemble(fixture, now);
+  assert.doesNotMatch(data.TRIAL_DONA_SVG, /<svg/);
+  assert.match(data.TRIAL_DONA_SVG, /Sin errores de pago/);
 });
 
 test('LEADS_7D proviene de raw.leads7d', () => {

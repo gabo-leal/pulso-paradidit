@@ -5,7 +5,7 @@ import { mrrFromStripeSubs, mrrFromGhlTransactions } from './metrics/mrr.js';
 import { sumChargesInWindow, roas, cpa } from './metrics/flow.js';
 import { yearTotals } from './metrics/year.js';
 import { monthlyReport } from './metrics/monthly.js';
-import { buildSvg } from './chart.js';
+import { buildSvg, buildDonutSvg } from './chart.js';
 import { render } from './render.js';
 import { listActiveSubs, listChargesSince, listCanceledSubs } from './sources/stripeLW.js';
 import { listTransactions, leadsCount } from './sources/ghl.js';
@@ -13,6 +13,7 @@ import { dailySpend, monthlySpend, campaignInsights } from './sources/meta.js';
 import { listSocialAccounts, socialStats } from './sources/ghlSocial.js';
 import { campaignBreakdown } from './metrics/ads.js';
 import { socialSummary } from './metrics/social.js';
+import { trialsSummary } from './metrics/trials.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 const peso = n => '$' + Math.round(n).toLocaleString('en-US');
@@ -184,6 +185,12 @@ export function assemble(raw, nowEpochSec) {
     : '<tr><td colspan="5" style="color:var(--muted)">Sin campañas activas en el periodo.</td></tr>';
   const ADS_RESUMEN = ab.mejor ? `Mejor ROAS: <b style="color:var(--green)">${ab.mejor}</b> · Peor: <b style="color:#ff8a8a">${ab.peor}</b>` : 'Sin datos de campañas.';
 
+  // ── Trials ($10 → $349) ───────────────────────────────────────────────────
+  const tr = trialsSummary(raw.ghlTxYear || [], nowEpochSec);
+  const TRIAL_DONA_SVG = tr.errorPago
+    ? buildDonutSvg(tr.motivosError)
+    : '<div style="color:var(--muted)">Sin errores de pago 🎉 — todos los cobros de renovación han pasado.</div>';
+
   // ── Assemble output ────────────────────────────────────────────────────────
   return {
     // Stamp
@@ -237,6 +244,17 @@ export function assemble(raw, nowEpochSec) {
 
     // Redes y Ads
     REDES_CARDS, ADS_TBODY, ADS_RESUMEN,
+
+    // Trials
+    TRIAL_COHORTE:    String(tr.cohorte),
+    TRIAL_RENOVARON:  String(tr.renovaron),
+    TRIAL_ERROR:      String(tr.errorPago),
+    TRIAL_ABIERTOS:   String(tr.abiertos),
+    TRIAL_CANCELARON: String(tr.cancelaron),
+    TRIAL_CONVERSION: Math.round(tr.conversion * 100) + '%',
+    TRIAL_MRR_GANADO: peso(tr.mrrGanado),
+    TRIAL_EN_RIESGO:  peso(tr.enRiesgo),
+    TRIAL_DONA_SVG,
   };
 }
 
