@@ -296,9 +296,12 @@
       <div class="card fctl"><div class="k">Churn mensual %</div>
         <input type="number" id="f-churn" min="0" max="100" step="0.5">
         <div class="sub">Supuesto — aún sin dato real del funnel</div></div>
+      <div class="card fctl"><div class="k">MRR actual (MXN/mes)</div>
+        <input type="number" id="f-mrr" min="0" step="1">
+        <div class="sub">Real hoy: $<span id="fd-mrr"></span> · LW + GHL combinado</div></div>
       <div class="card fctl"><div class="k">Subs activos hoy</div>
         <input type="number" id="f-subs" min="0" step="1">
-        <div class="sub">Real hoy: <span id="fd-subs"></span> renovados</div></div>
+        <div class="sub">Real hoy: <span id="fd-subs"></span> (LW + GHL) — solo referencia de la columna Subs</div></div>
     </div>
     <button class="fbtn" id="f-reset">↺ Restablecer a datos reales</button>
     <div class="chartcard" style="margin-top:14px">
@@ -307,7 +310,7 @@
         <tbody id="f-tbody"></tbody>
       </table>
     </div>
-    <div class="legend">Modelo: subs<sub>m</sub> = subs<sub>m−1</sub> × (1 − churn) + trials × conversión · MRR = subs × $349. El mes 1 es el <b>mes próximo</b> (el actual ya está en el dashboard real). Los nuevos subs no churnean su primer mes. Con churn &gt; 0 el MRR converge a un techo: trials × conversión ÷ churn × $349. <b>Acumulado</b> = suma de los MRR proyectados hasta ese mes (lo que habrías cobrado en total por renovaciones; no incluye los $10 de entrada). Tus cambios se guardan en este navegador; "Restablecer" vuelve a los datos reales del último build.</div>
+    <div class="legend">Modelo: MRR<sub>m</sub> = MRR<sub>m−1</sub> × (1 − churn) + trials × conversión × $349 — se churnea el MRR real (LW y GHL pagan precios distintos); solo los subs nuevos entran a $349. La columna Subs es referencia (mismo churn sobre el conteo). El mes 1 es el <b>mes próximo</b> (el actual ya está en el dashboard real). Los nuevos subs no churnean su primer mes. Con churn &gt; 0 el MRR converge a un techo: trials × conversión ÷ churn × $349. <b>Acumulado</b> = suma de los MRR proyectados hasta ese mes (lo que habrías cobrado en total por renovaciones; no incluye los $10 de entrada). Tus cambios se guardan en este navegador; "Restablecer" vuelve a los datos reales del último build.</div>
   </section>
 
 </div>
@@ -329,13 +332,14 @@
   var FORECAST_DEFAULTS = {{FORECAST_DEFAULTS}};
   (function(){
     var MES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
-    var ids = { trialsMes:'f-trials', conversionPct:'f-conv', churnPct:'f-churn', subsIniciales:'f-subs' };
+    var ids = { trialsMes:'f-trials', conversionPct:'f-conv', churnPct:'f-churn', mrrInicial:'f-mrr', subsIniciales:'f-subs' };
     var $ = function(id){ return document.getElementById(id); };
     var peso = function(n){ return '$' + Math.round(n).toLocaleString('en-US'); };
 
     // defaults reales visibles junto a cada input
     $('fd-trials').textContent = FORECAST_DEFAULTS.trialsMes;
     $('fd-conv').textContent   = FORECAST_DEFAULTS.conversionPct;
+    $('fd-mrr').textContent    = FORECAST_DEFAULTS.mrrInicial.toLocaleString('en-US');
     $('fd-subs').textContent   = FORECAST_DEFAULTS.subsIniciales;
 
     function valores(){
@@ -348,8 +352,8 @@
     }
     function recalc(){
       var v = valores();
-      var rows = proyectarMrr({ subsIniciales:v.subsIniciales, trialsMes:v.trialsMes,
-        conversionPct:v.conversionPct, churnPct:v.churnPct,
+      var rows = proyectarMrr({ mrrInicial:v.mrrInicial, subsIniciales:v.subsIniciales,
+        trialsMes:v.trialsMes, conversionPct:v.conversionPct, churnPct:v.churnPct,
         precio:FORECAST_DEFAULTS.precio, meses:FORECAST_DEFAULTS.meses });
       var hoy = new Date();
       $('f-tbody').innerHTML = rows.map(function(r){

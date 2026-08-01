@@ -90,18 +90,20 @@ test('FORECAST_JS revive con new Function (sin scope del módulo) y proyecta', (
 test('FORECAST_DEFAULTS trae los datos reales de trials en JSON', () => {
   const iso = secsAgo => new Date((now - secsAgo) * 1000).toISOString();
   const DAY = 86400;
-  const data = assemble({
-    ...fixture,
-    ghlTxYear: [
-      { amount: 10, status: 'succeeded', subscriptionId: 'r1', createdAt: iso(40 * DAY) },
-      { amount: 349, status: 'succeeded', subscriptionId: 'r1', createdAt: iso(5 * DAY) },
-      { amount: 10, status: 'succeeded', subscriptionId: 'e1', createdAt: iso(40 * DAY) },
-      { amount: 349, status: 'failed', subscriptionId: 'e1', createdAt: iso(5 * DAY) },
-      { amount: 10, status: 'succeeded', subscriptionId: 'a1', createdAt: iso(3 * DAY) },
-    ],
-  }, now);
+  const txs = [
+    { amount: 10, status: 'succeeded', subscriptionId: 'r1', createdAt: iso(40 * DAY) },
+    { amount: 349, status: 'succeeded', subscriptionId: 'r1', createdAt: iso(5 * DAY) },
+    { amount: 10, status: 'succeeded', subscriptionId: 'e1', createdAt: iso(40 * DAY) },
+    { amount: 349, status: 'failed', subscriptionId: 'e1', createdAt: iso(5 * DAY) },
+    { amount: 10, status: 'succeeded', subscriptionId: 'a1', createdAt: iso(3 * DAY) },
+  ];
+  // como en main(): ghlTx y ghlTxYear son el mismo array (mrrGHL lee ghlTx)
+  const data = assemble({ ...fixture, ghlTx: txs, ghlTxYear: txs }, now);
+  // mrrInicial/subsIniciales = MRR real combinado: LW (stripeSubs, aquí vacío)
+  // + GHL reconstruido de cobros ≤35 días (r1 $349 + a1 $10; e1 quedó fuera por fecha)
   assert.deepEqual(JSON.parse(data.FORECAST_DEFAULTS), {
-    trialsMes: 1, conversionPct: 50, churnPct: 5, subsIniciales: 1, precio: 349, meses: 6,
+    trialsMes: 1, conversionPct: 50, churnPct: 5,
+    mrrInicial: 359, subsIniciales: 2, precio: 349, meses: 6,
   });
 });
 

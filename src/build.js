@@ -264,7 +264,9 @@ export function assemble(raw, nowEpochSec) {
       trialsMes: tr.abiertos,
       conversionPct: Math.round(tr.conversion * 100),
       churnPct: 5,
-      subsIniciales: tr.renovaron,
+      // Base real combinada: LW y GHL pagan precios distintos → se churnea el MRR
+      mrrInicial: Math.round(mrrLW.mxn + mrrGHL.mxn),
+      subsIniciales: mrrLW.count + mrrGHL.count,
       precio: FULL_PRICE,
       meses: 6,
     }),

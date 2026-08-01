@@ -2,7 +2,10 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { proyectarMrr } from '../src/metrics/forecast.js';
 
-const base = { subsIniciales: 10, trialsMes: 20, conversionPct: 50, churnPct: 10, precio: 349 };
+// Modelo base-MRR: mrr_m = mrr_{m-1}×(1−churn) + nuevos×precio
+// (la base real combina LW + GHL con precios distintos; churnear el MRR evita
+// asumir que todos pagan $349)
+const base = { mrrInicial: 3490, subsIniciales: 10, trialsMes: 20, conversionPct: 50, churnPct: 10, precio: 349 };
 
 test('devuelve 6 filas por default, mes 1..6', () => {
   const rows = proyectarMrr(base);
@@ -10,52 +13,52 @@ test('devuelve 6 filas por default, mes 1..6', () => {
   assert.deepEqual(rows.map(r => r.mes), [1, 2, 3, 4, 5, 6]);
 });
 
-test('mes 1: nuevos, subs, mrr y delta contra el MRR inicial implícito', () => {
+test('mes 1: churnea el MRR base y suma los nuevos a precio pleno', () => {
   const [m1] = proyectarMrr(base);
-  assert.equal(m1.nuevos, 10);          // 20 × 50%
-  assert.equal(m1.subs, 19);            // 10 × 0.9 + 10
-  assert.equal(m1.mrr, 19 * 349);       // 6631
-  assert.equal(m1.delta, 6631 - 3490);  // vs subsIniciales × precio
+  assert.equal(m1.nuevos, 10);               // 20 × 50%
+  assert.equal(m1.mrr, 3490 * 0.9 + 10 * 349); // 6631
+  assert.equal(m1.subs, 19);                 // 10 × 0.9 + 10 (referencia)
+  assert.equal(m1.delta, 6631 - 3490);       // vs MRR inicial
 });
 
-test('sin churn el crecimiento es lineal: subs_m = iniciales + m × nuevos', () => {
+test('sin churn el MRR crece lineal: mrrInicial + m × nuevos × precio', () => {
   const rows = proyectarMrr({ ...base, churnPct: 0 });
-  rows.forEach(r => {
-    assert.equal(r.subs, 10 + r.mes * 10);
-    assert.equal(r.mrr, (10 + r.mes * 10) * 349);
-  });
-  // delta constante = nuevos × precio
+  rows.forEach(r => assert.equal(r.mrr, 3490 + r.mes * 10 * 349));
   assert.ok(rows.every(r => r.delta === 10 * 349));
 });
 
-test('con churn la serie converge: creciente bajo el techo, sin rebasarlo', () => {
-  // techo de subs = nuevos / churn = 10 / 0.1 = 100
+test('con churn el MRR converge: creciente bajo el techo, sin rebasarlo', () => {
+  // techo de MRR = nuevos × precio / churn = 3490 / 0.1 = 34900
   const rows = proyectarMrr(base);
-  for (let i = 1; i < rows.length; i++) assert.ok(rows[i].subs > rows[i - 1].subs);
-  assert.ok(rows[rows.length - 1].subs < 100);
+  for (let i = 1; i < rows.length; i++) assert.ok(rows[i].mrr > rows[i - 1].mrr);
+  assert.ok(rows[rows.length - 1].mrr < 34900);
 });
 
-test('arrancando exactamente en el techo la serie es constante (delta 0)', () => {
-  const rows = proyectarMrr({ ...base, subsIniciales: 100 });
+test('arrancando exactamente en el techo el MRR es constante (delta 0)', () => {
+  const rows = proyectarMrr({ ...base, mrrInicial: 34900 });
   rows.forEach(r => {
-    assert.equal(r.subs, 100);
+    assert.equal(r.mrr, 34900);
     assert.equal(r.delta, 0);
   });
 });
 
+test('sin trials nuevos la base decae geométricamente', () => {
+  const rows = proyectarMrr({ ...base, trialsMes: 0, mrrInicial: 1000 });
+  rows.forEach(r => assert.ok(Math.abs(r.mrr - 1000 * 0.9 ** r.mes) < 1e-9));
+  rows.forEach(r => assert.ok(r.delta < 0));
+});
+
 test('acumulado: suma corriente del MRR mes a mes', () => {
   const rows = proyectarMrr({ ...base, churnPct: 0 });
-  // sin churn: mrr_m = (10 + 10m)×349 → acumulado_m = Σ
   let suma = 0;
   rows.forEach(r => {
     suma += r.mrr;
     assert.equal(r.acumulado, suma);
   });
-  assert.equal(rows[0].acumulado, rows[0].mrr);
 });
 
 test('inputs cero: todas las filas en 0', () => {
-  const rows = proyectarMrr({ subsIniciales: 0, trialsMes: 0, conversionPct: 0, churnPct: 5, precio: 349 });
+  const rows = proyectarMrr({ mrrInicial: 0, subsIniciales: 0, trialsMes: 0, conversionPct: 0, churnPct: 5, precio: 349 });
   rows.forEach(r => {
     assert.equal(r.nuevos, 0);
     assert.equal(r.subs, 0);
@@ -66,15 +69,11 @@ test('inputs cero: todas las filas en 0', () => {
 });
 
 test('sanitiza: NaN y negativos → 0; churn se acota a 100', () => {
-  const rows = proyectarMrr({ subsIniciales: NaN, trialsMes: -5, conversionPct: 50, churnPct: 150, precio: 349 });
-  // churn 100%: cada mes sobreviven 0 previos; trials -5 → 0 nuevos
-  rows.forEach(r => {
-    assert.equal(r.subs, 0);
-    assert.equal(r.mrr, 0);
-  });
-  // churn 100 con trials válidos: subs = solo los nuevos de cada mes
-  const rows2 = proyectarMrr({ subsIniciales: 40, trialsMes: 20, conversionPct: 50, churnPct: 150, precio: 349 });
-  rows2.forEach(r => assert.equal(r.subs, 10));
+  const rows = proyectarMrr({ mrrInicial: NaN, subsIniciales: -3, trialsMes: -5, conversionPct: 50, churnPct: 150, precio: 349 });
+  rows.forEach(r => assert.equal(r.mrr, 0));
+  // churn 100 con trials válidos: cada mes solo queda el MRR de los nuevos
+  const rows2 = proyectarMrr({ mrrInicial: 99999, subsIniciales: 40, trialsMes: 20, conversionPct: 50, churnPct: 150, precio: 349 });
+  rows2.forEach(r => assert.equal(r.mrr, 10 * 349));
 });
 
 test('meses configurable y default 6 si falta o es inválido', () => {
