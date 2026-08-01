@@ -105,8 +105,20 @@ test('cohorte vacía: todo 0 y conversion 0 (sin NaN)', () => {
   const r = trialsSummary([], now);
   assert.deepEqual(r, {
     cohorte: 0, renovaron: 0, errorPago: 0, abiertos: 0, cancelaron: 0,
-    conversion: 0, mrrGanado: 0, enRiesgo: 0, motivosError: [],
+    conversion: 0, conversionPotencial: 0, mrrGanado: 0, enRiesgo: 0, motivosError: [],
   });
+});
+
+test('conversionPotencial cuenta los errores como convertidos: 1R+1E+2C → 50%', () => {
+  const txs = [
+    tx(40 * DAY, 10, 'succeeded', 'r1'), tx(5 * DAY, 349, 'succeeded', 'r1'),
+    tx(40 * DAY, 10, 'succeeded', 'e1'), tx(5 * DAY, 349, 'failed', 'e1', 'Your card was declined.'),
+    tx(40 * DAY, 10, 'succeeded', 'c1'),
+    tx(41 * DAY, 10, 'succeeded', 'c2'),
+  ];
+  const r = trialsSummary(txs, now);
+  assert.equal(r.conversion, 0.25);           // solo renovados
+  assert.equal(r.conversionPotencial, 0.5);   // renovados + errores
 });
 
 // ── motivosError ──────────────────────────────────────────────────────────────

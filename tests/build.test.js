@@ -39,13 +39,13 @@ test('assemble produce todas las claves del template (43) sin undefined', () => 
     'GRAFICO_SVG',
     'REPORTE_TBODY', 'REPORTE_TFOOT',
     'TRIAL_COHORTE', 'TRIAL_RENOVARON', 'TRIAL_ERROR', 'TRIAL_ABIERTOS', 'TRIAL_CANCELARON',
-    'TRIAL_CONVERSION', 'TRIAL_MRR_GANADO', 'TRIAL_EN_RIESGO', 'TRIAL_DONA_SVG',
+    'TRIAL_CONVERSION', 'TRIAL_CONVERSION_POT', 'TRIAL_MRR_GANADO', 'TRIAL_EN_RIESGO', 'TRIAL_DONA_SVG',
   ];
 
   for (const k of claves) {
     assert.ok(data[k] !== undefined, `falta clave: ${k}`);
   }
-  assert.equal(claves.length, 43, 'el test cubre las 43 claves');
+  assert.equal(claves.length, 44, 'el test cubre las 44 claves');
 });
 
 test('claves TRIAL_* se calculan desde ghlTxYear (incluye tx fallidas)', () => {
@@ -71,6 +71,7 @@ test('claves TRIAL_* se calculan desde ghlTxYear (incluye tx fallidas)', () => {
   assert.equal(data.TRIAL_ABIERTOS, '1');
   assert.equal(data.TRIAL_CANCELARON, '0');
   assert.equal(data.TRIAL_CONVERSION, '50%');
+  assert.equal(data.TRIAL_CONVERSION_POT, '100%'); // 1 renovó + 1 error, 0 cancelaron
   assert.equal(data.TRIAL_MRR_GANADO, '$349');
   assert.equal(data.TRIAL_EN_RIESGO, '$349');
   assert.match(data.TRIAL_DONA_SVG, /<svg/);

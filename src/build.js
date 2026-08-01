@@ -252,6 +252,7 @@ export function assemble(raw, nowEpochSec) {
     TRIAL_ABIERTOS:   String(tr.abiertos),
     TRIAL_CANCELARON: String(tr.cancelaron),
     TRIAL_CONVERSION: Math.round(tr.conversion * 100) + '%',
+    TRIAL_CONVERSION_POT: Math.round(tr.conversionPotencial * 100) + '%',
     TRIAL_MRR_GANADO: peso(tr.mrrGanado),
     TRIAL_EN_RIESGO:  peso(tr.enRiesgo),
     TRIAL_DONA_SVG,

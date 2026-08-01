@@ -57,6 +57,8 @@ export function trialsSummary(ghlTx, nowEpochSec) {
     abiertos,
     cancelaron,
     conversion: madura ? renovaron / madura : 0,
+    // Techo: cuenta los errores de pago como conversiones (no cancelaron; el cobro falló)
+    conversionPotencial: madura ? (renovaron + errorPago) / madura : 0,
     mrrGanado: FULL_PRICE * renovaron,
     enRiesgo: FULL_PRICE * errorPago,
     motivosError: [...motivos]
