@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { trialsSummary, TRIAL_PRICE, FULL_PRICE, TRIAL_WINDOW_DAYS } from '../src/metrics/trials.js';
-import { buildDonutSvg } from '../src/chart.js';
+import { buildDonutSvg, buildSvg } from '../src/chart.js';
 
 // Mismo "now" fijo que build.test.js
 const now = Date.UTC(2026, 5, 19, 18, 0, 0) / 1000;
@@ -171,6 +171,22 @@ test('buildDonutSvg con un solo motivo produce un círculo completo válido', ()
   assert.match(svg, /Otro/);
   assert.match(svg, /100%/);
   assert.doesNotMatch(svg, /NaN/);
+});
+
+// Regresión: el <style> de un SVG inline aplica a TODO el documento. Un selector
+// `circle{...}` sin scope en la gráfica principal pintaba la dona como disco sólido.
+test('buildDonutSvg es inmune a CSS global: círculos con estilo inline', () => {
+  const svg = buildDonutSvg([{ motivo: 'Otro', count: 2 }]);
+  for (const c of svg.match(/<circle[^>]*>/g)) {
+    assert.match(c, /style="[^"]*fill:none/, `círculo sin fill:none inline: ${c}`);
+    assert.match(c, /style="[^"]*stroke:#/, `círculo sin stroke inline: ${c}`);
+  }
+});
+
+test('el <style> de buildSvg no tiene selectores de elemento sin scope (fugan al documento)', () => {
+  const svg = buildSvg({ '2026-07-01': 100 }, { '2026-07-01': 50 }, ['2026-07-01'], '2026-07-01');
+  const styles = (svg.match(/<style>[\s\S]*?<\/style>/g) || []).join('');
+  assert.doesNotMatch(styles, /(^|[\s,}])circle\s*\{/, 'selector "circle" sin clase fuga a toda la página');
 });
 
 test('constantes de negocio exportadas', () => {

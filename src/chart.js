@@ -23,7 +23,7 @@ export function buildSvg(incomeByDay, spendByDay, days, todayKey) {
     .bar{fill:rgba(91,91,246,.22)} .bar-today{fill:url(#gToday)}
     .ilab{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:15px;text-anchor:middle}
     .sline{fill:none;stroke:#F5A623;stroke-width:2.8;stroke-linejoin:round;stroke-linecap:round}
-    circle{fill:#F5A623;stroke:#0A0A0C;stroke-width:1.8}
+    .sdot{fill:#F5A623;stroke:#0A0A0C;stroke-width:1.8}
     .slab{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;fill:#F5A623;text-anchor:middle}
     .dlab{font-family:'Barlow',sans-serif;font-size:13px;fill:#5C5C66;text-anchor:middle}
     .baseaxis{stroke:#1F1F24;stroke-width:1}
@@ -85,7 +85,7 @@ export function buildSvg(incomeByDay, spendByDay, days, todayKey) {
   // Círculos en cada punto de gasto
   for (const p of spendPoints) {
     if (p === null) continue;
-    parts.push(`<circle cx="${cx(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="4.2"/>`);
+    parts.push(`<circle class="sdot" cx="${cx(p.i).toFixed(1)}" cy="${y(p.v).toFixed(1)}" r="4.2"/>`);
   }
 
   // Labels de gasto (encima del círculo, 10px hacia arriba; si el punto está muy cerca del borde inferior,
@@ -138,7 +138,8 @@ export function buildDonutSvg(segments) {
   for (const seg of segments) {
     const len = (seg.count / total) * C;
     const color = DONUT_COLORS[seg.motivo] || '#8A8A93';
-    parts.push(`<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${color}" stroke-width="${sw}" stroke-dasharray="${Math.max(len - GAP, 0.5).toFixed(1)} ${(C - len + GAP).toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"/>`);
+    // style inline: gana a cualquier CSS global filtrado desde otros SVG del documento
+    parts.push(`<circle cx="${cx}" cy="${cy}" r="${r}" style="fill:none;stroke:${color};stroke-width:${sw}px" stroke-dasharray="${Math.max(len - GAP, 0.5).toFixed(1)} ${(C - len + GAP).toFixed(1)}" stroke-dashoffset="${offset.toFixed(1)}"/>`);
     offset -= len;
   }
 
