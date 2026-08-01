@@ -1,5 +1,19 @@
 const BASE = 'https://graph.facebook.com/v21.0';
 
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Meta responde 403 en rate limits transitorios (visto en CI el 30-jul-2026), no solo en permisos.
+export async function metaFetch(url, fetchImpl = globalThis.fetch, sleepImpl = sleep) {
+  const ATTEMPTS = 3;
+  for (let i = 1; ; i++) {
+    const res = await fetchImpl(url);
+    if (res.ok) return res;
+    const transient = res.status === 403 || res.status >= 500;
+    if (!transient || i >= ATTEMPTS) throw new Error('Meta ' + res.status);
+    await sleepImpl(500 * 2 ** (i - 1));
+  }
+}
+
 export function parseMetaAmount(s) {
   if (typeof s !== 'string') return Number(s) || 0;
   return Number(s.replace(/[^0-9.]/g, '')) || 0;
@@ -15,8 +29,7 @@ export async function dailySpend(token, accountId, since, until, fetchImpl = glo
   const out = [];
   let url = u.toString();
   while (url) {
-    const res = await fetchImpl(url);
-    if (!res.ok) throw new Error('Meta ' + res.status);
+    const res = await metaFetch(url, fetchImpl);
     const body = await res.json();
     out.push(...(body.data ?? []));
     url = body.paging?.next ?? null;
@@ -30,8 +43,7 @@ export async function monthlySpend(token, accountId, since, until, fetchImpl = g
   u.searchParams.set('time_increment', 'monthly');
   u.searchParams.set('time_range', JSON.stringify({ since, until }));
   u.searchParams.set('access_token', token);
-  const res = await fetchImpl(u.toString());
-  if (!res.ok) throw new Error('Meta ' + res.status);
+  const res = await metaFetch(u.toString(), fetchImpl);
   const body = await res.json();
   return (body.data ?? []).map(d => ({ month: d.date_start.slice(0, 7), spend: Number(d.spend) || 0 }));
 }
@@ -45,8 +57,7 @@ export async function campaignInsights(token, accountId, datePreset = 'last_7d',
   const out = [];
   let url = u.toString();
   while (url) {
-    const res = await fetchImpl(url);
-    if (!res.ok) throw new Error('Meta ' + res.status);
+    const res = await metaFetch(url, fetchImpl);
     const body = await res.json();
     for (const d of (body.data ?? [])) {
       const roasItem = (d.purchase_roas ?? []).find(x => x.action_type === 'omni_purchase');

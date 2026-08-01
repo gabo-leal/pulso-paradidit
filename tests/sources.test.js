@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { leadsCount } from '../src/sources/ghl.js';
-import { parseMetaAmount, dailySpend, monthlySpend, campaignInsights } from '../src/sources/meta.js';
+import { parseMetaAmount, dailySpend, monthlySpend, campaignInsights, metaFetch } from '../src/sources/meta.js';
 import { listSocialAccounts, socialStats } from '../src/sources/ghlSocial.js';
 
 test('parseMetaAmount limpia "$4,500.00 MXN" a 4500', () => {
@@ -69,6 +69,49 @@ test('campaignInsights parsea ROAS/purchases por campaña y pagina', async () =>
   assert.deepEqual(r[1], { name: 'Retargeting', spend: 900, roas: 0, purchases: 0, ctr: 1.2, cpc: 2.1 });
   assert.equal(calls, 2);
   assert.equal(urls[1], 'https://graph.facebook.com/next');
+});
+
+test('metaFetch reintenta en 503 con backoff y devuelve la respuesta al recuperarse', async () => {
+  let calls = 0;
+  const waits = [];
+  const mock = async () => (++calls < 3 ? { ok: false, status: 503 } : { ok: true, status: 200 });
+  const sleepImpl = async ms => { waits.push(ms); };
+  const res = await metaFetch('https://x', mock, sleepImpl);
+  assert.equal(res.ok, true);
+  assert.equal(calls, 3);
+  assert.deepEqual(waits, [500, 1000]);
+});
+
+test('metaFetch reintenta en 403 (rate limit transitorio de Meta)', async () => {
+  let calls = 0;
+  const mock = async () => (++calls < 2 ? { ok: false, status: 403 } : { ok: true, status: 200 });
+  const res = await metaFetch('https://x', mock, async () => {});
+  assert.equal(res.ok, true);
+  assert.equal(calls, 2);
+});
+
+test('metaFetch NO reintenta en 400 (error permanente) y lanza Meta 400', async () => {
+  let calls = 0;
+  const mock = async () => { calls++; return { ok: false, status: 400 }; };
+  await assert.rejects(() => metaFetch('https://x', mock, async () => {}), /Meta 400/);
+  assert.equal(calls, 1);
+});
+
+test('metaFetch agota los reintentos y lanza el último error', async () => {
+  let calls = 0;
+  const mock = async () => { calls++; return { ok: false, status: 503 }; };
+  await assert.rejects(() => metaFetch('https://x', mock, async () => {}), /Meta 503/);
+  assert.equal(calls, 3);
+});
+
+test('dailySpend sobrevive un 503 transitorio de Meta', async () => {
+  let calls = 0;
+  const mock = async () => (++calls === 1
+    ? { ok: false, status: 503 }
+    : { ok: true, json: async () => ({ data: [{ date_start: '2026-07-01', spend: '50.00' }] }) });
+  const result = await dailySpend('token', 'acc', '2026-07-01', '2026-07-31', mock);
+  assert.deepEqual(result, [{ date: '2026-07-01', spend: 50 }]);
+  assert.equal(calls, 2);
 });
 
 test('listSocialAccounts extrae profileId/platform/name', async () => {
