@@ -31,3 +31,18 @@ export function mrrFromGhlTransactions(transactions, nowEpochSec) {
   }
   return { mxn: Math.round(mxn), count };
 }
+
+// Pase Anual PRO: pago único (sin subscriptionId) con vigencia de 12 meses.
+// Aporta amount/12 al MRR mientras no venza (365 días desde el cobro).
+const PASE_ANUAL = 'Pase Anual PRO';
+export function pasesAnuales(transactions, nowEpochSec) {
+  const cutoff = nowEpochSec - 365 * DAY;
+  let mxn = 0, count = 0;
+  for (const t of transactions) {
+    if (t.status !== 'succeeded' || t.entitySourceName !== PASE_ANUAL) continue;
+    if (Date.parse(t.createdAt) / 1000 < cutoff) continue;
+    mxn += t.amount / 12;
+    count++;
+  }
+  return { mxn, count };
+}

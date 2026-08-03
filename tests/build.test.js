@@ -96,14 +96,17 @@ test('FORECAST_DEFAULTS trae los datos reales de trials en JSON', () => {
     { amount: 10, status: 'succeeded', subscriptionId: 'e1', createdAt: iso(40 * DAY) },
     { amount: 349, status: 'failed', subscriptionId: 'e1', createdAt: iso(5 * DAY) },
     { amount: 10, status: 'succeeded', subscriptionId: 'a1', createdAt: iso(3 * DAY) },
+    { amount: 1997, status: 'succeeded', subscriptionId: null, entitySourceName: 'Pase Anual PRO', createdAt: iso(60 * DAY) },
   ];
   // como en main(): ghlTx y ghlTxYear son el mismo array (mrrGHL lee ghlTx)
   const data = assemble({ ...fixture, ghlTx: txs, ghlTxYear: txs }, now);
-  // mrrInicial/subsIniciales = MRR real combinado: LW (stripeSubs, aquí vacío)
-  // + GHL reconstruido de cobros ≤35 días (r1 $349 + a1 $10; e1 quedó fuera por fecha)
+  // Base del forecast: LW (vacío) + GHL recurrente SIN trials de $10 (solo r1 con
+  // último cobro de $349; a1 queda fuera por ser trialero) + pase anual /12.
   assert.deepEqual(JSON.parse(data.FORECAST_DEFAULTS), {
     trialsMes: 1, conversionPct: 50, churnPct: 5,
-    mrrInicial: 359, subsIniciales: 2, precio: 349, meses: 6,
+    mrrInicial: Math.round(349 + 1997 / 12), // 515
+    subsIniciales: 2,                         // r1 + 1 pase anual
+    precio: 349, meses: 6,
   });
 });
 

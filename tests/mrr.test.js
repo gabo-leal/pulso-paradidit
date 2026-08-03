@@ -26,3 +26,30 @@ test('MRR GHL reconstruye solo recurrentes con cobro reciente', () => {
   assert.equal(r.count, 1);   // solo sub_a
   assert.equal(r.mxn, 397);
 });
+
+// ── pasesAnuales (Pase Anual PRO: pago único de $1,997, vigencia 12 meses) ────
+const nowP = Date.UTC(2026, 5, 19, 18, 0, 0) / 1000;
+const DAYP = 86400;
+const paseTx = (secsAgo, extra) => ({
+  amount: 1997, status: 'succeeded', subscriptionId: null,
+  entitySourceName: 'Pase Anual PRO',
+  createdAt: new Date((nowP - secsAgo) * 1000).toISOString(),
+  ...extra,
+});
+
+test('pasesAnuales cuenta cobros del Pase Anual dentro de 365 días, prorrateados /12', async () => {
+  const { pasesAnuales } = await import('../src/metrics/mrr.js');
+  const r = pasesAnuales([paseTx(30 * DAYP), paseTx(300 * DAYP)], nowP);
+  assert.equal(r.count, 2);
+  assert.equal(r.mxn, (1997 * 2) / 12);
+});
+
+test('pasesAnuales excluye vencidos (>365 días), fallidos y otros productos', async () => {
+  const { pasesAnuales } = await import('../src/metrics/mrr.js');
+  const r = pasesAnuales([
+    paseTx(370 * DAYP),                                        // vencido
+    paseTx(10 * DAYP, { status: 'failed' }),                   // fallido
+    paseTx(10 * DAYP, { entitySourceName: 'Maestro del Bombo', amount: 1997 }), // otro producto
+  ], nowP);
+  assert.deepEqual(r, { mxn: 0, count: 0 });
+});

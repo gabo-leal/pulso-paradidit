@@ -1,7 +1,7 @@
 // pulso/src/build.js
 import fs from 'node:fs';
 import { windows, cdmxDayKey } from './lib/dates.js';
-import { mrrFromStripeSubs, mrrFromGhlTransactions } from './metrics/mrr.js';
+import { mrrFromStripeSubs, mrrFromGhlTransactions, pasesAnuales } from './metrics/mrr.js';
 import { sumChargesInWindow, roas, cpa } from './metrics/flow.js';
 import { yearTotals } from './metrics/year.js';
 import { monthlyReport } from './metrics/monthly.js';
@@ -13,7 +13,7 @@ import { dailySpend, monthlySpend, campaignInsights } from './sources/meta.js';
 import { listSocialAccounts, socialStats } from './sources/ghlSocial.js';
 import { campaignBreakdown } from './metrics/ads.js';
 import { socialSummary } from './metrics/social.js';
-import { trialsSummary, FULL_PRICE } from './metrics/trials.js';
+import { trialsSummary, FULL_PRICE, TRIAL_PRICE } from './metrics/trials.js';
 import { proyectarMrr } from './metrics/forecast.js';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -188,6 +188,11 @@ export function assemble(raw, nowEpochSec) {
 
   // ── Trials ($10 → $349) ───────────────────────────────────────────────────
   const tr = trialsSummary(raw.ghlTxYear || [], nowEpochSec);
+  // Base del forecast: LW (anuales ya /12) + GHL recurrente sin trialeros de $10
+  // (ya van en trialsMes; contarlos duplicaría) + Pases Anuales vigentes /12.
+  const ghlSinTrial = mrrFromGhlTransactions(
+    (raw.ghlTx || []).filter(t => t.amount !== TRIAL_PRICE), nowEpochSec);
+  const pases = pasesAnuales(raw.ghlTx || [], nowEpochSec);
   const TRIAL_DONA_SVG = tr.errorPago
     ? buildDonutSvg(tr.motivosError)
     : '<div style="color:var(--muted)">Sin errores de pago 🎉 — todos los cobros de renovación han pasado.</div>';
@@ -264,9 +269,8 @@ export function assemble(raw, nowEpochSec) {
       trialsMes: tr.abiertos,
       conversionPct: Math.round(tr.conversion * 100),
       churnPct: 5,
-      // Base real combinada: LW y GHL pagan precios distintos → se churnea el MRR
-      mrrInicial: Math.round(mrrLW.mxn + mrrGHL.mxn),
-      subsIniciales: mrrLW.count + mrrGHL.count,
+      mrrInicial: Math.round(mrrLW.mxn + ghlSinTrial.mxn + pases.mxn),
+      subsIniciales: mrrLW.count + ghlSinTrial.count + pases.count,
       precio: FULL_PRICE,
       meses: 6,
     }),
