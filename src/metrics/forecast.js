@@ -11,7 +11,7 @@ export function proyectarMrr(p) {
   var nuevos = num(p.trialsMes) * (Math.min(num(p.conversionPct), 100) / 100);
   var churn = Math.min(num(p.churnPct), 100) / 100;
   var precio = num(p.precio);
-  var meses = num(p.meses) >= 1 ? Math.floor(num(p.meses)) : 6;
+  var meses = num(p.meses) >= 1 ? Math.floor(num(p.meses)) : 12;
 
   var rows = [];
   var acumulado = 0;

@@ -7,10 +7,10 @@ import { proyectarMrr } from '../src/metrics/forecast.js';
 // asumir que todos pagan $349)
 const base = { mrrInicial: 3490, subsIniciales: 10, trialsMes: 20, conversionPct: 50, churnPct: 10, precio: 349 };
 
-test('devuelve 6 filas por default, mes 1..6', () => {
+test('devuelve 12 filas por default, mes 1..12', () => {
   const rows = proyectarMrr(base);
-  assert.equal(rows.length, 6);
-  assert.deepEqual(rows.map(r => r.mes), [1, 2, 3, 4, 5, 6]);
+  assert.equal(rows.length, 12);
+  assert.deepEqual(rows.map(r => r.mes), [1,2,3,4,5,6,7,8,9,10,11,12]);
 });
 
 test('mes 1: churnea el MRR base y suma los nuevos a precio pleno', () => {
@@ -76,9 +76,9 @@ test('sanitiza: NaN y negativos → 0; churn se acota a 100', () => {
   rows2.forEach(r => assert.equal(r.mrr, 10 * 349));
 });
 
-test('meses configurable y default 6 si falta o es inválido', () => {
+test('meses configurable y default 12 si falta o es inválido', () => {
   assert.equal(proyectarMrr({ ...base, meses: 3 }).length, 3);
-  assert.equal(proyectarMrr({ ...base, meses: 0 }).length, 6);
+  assert.equal(proyectarMrr({ ...base, meses: 0 }).length, 12);
 });
 
 // Guardas del truco toString→browser (la función viaja embebida en el template):

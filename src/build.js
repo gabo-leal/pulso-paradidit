@@ -272,7 +272,7 @@ export function assemble(raw, nowEpochSec) {
       mrrInicial: Math.round(mrrLW.mxn + ghlSinTrial.mxn + pases.mxn),
       subsIniciales: mrrLW.count + ghlSinTrial.count + pases.count,
       precio: FULL_PRICE,
-      meses: 6,
+      meses: 12,
     }),
   };
 }

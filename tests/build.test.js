@@ -83,7 +83,7 @@ test('FORECAST_JS revive con new Function (sin scope del módulo) y proyecta', (
   const data = assemble(fixture, now);
   const fn = new Function('return ' + data.FORECAST_JS)();
   const rows = fn({ subsIniciales: 0, trialsMes: 0, conversionPct: 0, churnPct: 5, precio: 349 });
-  assert.equal(rows.length, 6);
+  assert.equal(rows.length, 12);
   rows.forEach(r => assert.equal(r.mrr, 0));
 });
 
@@ -106,7 +106,7 @@ test('FORECAST_DEFAULTS trae los datos reales de trials en JSON', () => {
     trialsMes: 1, conversionPct: 50, churnPct: 5,
     mrrInicial: Math.round(349 + 1997 / 12), // 515
     subsIniciales: 2,                         // r1 + 1 pase anual
-    precio: 349, meses: 6,
+    precio: 349, meses: 12,
   });
 });
 
